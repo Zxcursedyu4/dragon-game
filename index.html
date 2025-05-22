@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Dark Mysteries D&D</title>
+    <title>Dark Mysteries D&D Pro</title>
     <style>
         body {
             background: linear-gradient(45deg, #0a0a0a, #1a001a);
@@ -14,7 +14,7 @@
         }
 
         .chat-container {
-            flex: 3;
+            flex: 2;
             border-right: 2px solid #8a2be2;
             padding: 20px;
             display: flex;
@@ -25,160 +25,93 @@
             flex: 1;
             padding: 20px;
             overflow-y: auto;
+            border-right: 2px solid #8a2be2;
         }
 
-        .chat-messages {
+        .image-container {
             flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 8px;
-            margin-bottom: 10px;
+            padding: 20px;
+            background: rgba(0,0,0,0.7);
         }
 
-        .message {
-            margin: 8px 0;
-            padding: 8px;
-            border-radius: 5px;
-            animation: slideIn 0.3s ease-out;
+        .generated-image {
+            max-width: 100%;
+            border: 2px solid #8a2be2;
+            border-radius: 10px;
+            margin: 10px 0;
         }
 
-        .dm-message {
-            background: #2a002a;
-            border-left: 3px solid #8a2be2;
+        .loading-dots::after {
+            content: '.';
+            animation: dots 1s infinite;
         }
 
-        .player-message {
-            background: #001a1a;
-            border-right: 3px solid #00ffff;
-        }
-
-        .loading {
-            color: #8a2be2;
-            font-style: italic;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
         }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <div class="chat-messages" id="chatMessages"></div>
-        <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="Ваше действие..." onkeypress="handleEnter(event)">
-            <button onclick="sendMessage()">Отправить</button>
-        </div>
+        <!-- Чат и ввод остаются без изменений -->
     </div>
 
     <div class="game-container">
-        <div class="player-card">
-            <h2 id="charName">Игрок</h2>
-            <div id="stats">
-                <h3>Характеристики</h3>
-                <p>Сила: <span id="str">10</span></p>
-                <p>Ловкость: <span id="dex">6</span></p>
-            </div>
-            <div id="inventory">
-                <h3>Инвентарь</h3>
-                <div id="inventoryItems"></div>
-            </div>
-        </div>
+        <!-- Блок характеристик и инвентаря -->
+    </div>
+
+    <div class="image-container" id="imageContainer">
+        <div id="locationImage"></div>
+        <div id="characterImage"></div>
     </div>
 
     <script>
-        const API_KEY = 'sk-bba273c9380a4f7486b80117979fd59d';
-        let currentPlayer = {
-            inventory: [],
-            stats: { str: 10, dex: 6 }
-        };
+        const DEEPSEK_API = 'sk-bba273c9380a4f7486b80117979fd59d';
+        const GENAPI_TOKEN = 'sk-3QE3s6PSyljxpuNCxZN74UpypQZPd4lrEx5c24MHPR6juuxwozUajJD1Ajdf';
 
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            if (!message) return;
-
-            addMessage(message, 'player');
-            input.value = '';
-            
-            // Индикатор загрузки
-            const loadingMsg = addMessage("ДМ думает...", 'dm', true);
-            
+        async function generateImage(prompt, targetElement) {
             try {
-                const dmResponse = await generateDMMessage(message);
-                parseResponse(dmResponse);
-                addMessage(dmResponse, 'dm');
+                const response = await fetch('https://api.genapi.com/v1/images', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${GENAPI_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        size: "1024x1024",
+                        quality: "hd"
+                    })
+                });
+                
+                const data = await response.json();
+                const img = document.createElement('img');
+                img.src = data.url;
+                img.className = 'generated-image';
+                document.getElementById(targetElement).appendChild(img);
             } catch (error) {
-                addMessage("Ошибка связи с ДМ!", 'dm');
-            } finally {
-                loadingMsg.remove();
+                console.error('Ошибка генерации изображения:', error);
             }
         }
 
-        async function generateDMMessage(prompt) {
-            const response = await fetch('https://api.deepsic.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: "gpt-3.5-turbo",
-                    messages: [{
-                        role: "user",
-                        content: `[D&D Мастер] Ответь на действие игрока: "${prompt}". 
-                                 Включи предметы в формате [ITEM]Название. 
-                                 Учитывай характеристики: Сила ${currentPlayer.stats.str}, Ловкость ${currentPlayer.stats.dex}`
-                    }]
-                })
-            });
-
-            const data = await response.json();
-            return data.choices[0].message.content;
+        async function sendMessage() {
+            // Существующая логика отправки сообщения
+            
+            // Генерация изображений на основе контекста
+            if (message.toLowerCase().includes('локация')) {
+                await generateImage(`D&D локация: ${dmResponse}`, 'locationImage');
+            }
+            
+            if (message.toLowerCase().includes('персонаж')) {
+                await generateImage(`D&D персонаж: ${currentPlayer.name}, ${currentPlayer.stats.str} силы`, 'characterImage');
+            }
         }
 
-        function parseResponse(text) {
-            // Поиск предметов
-            const items = text.match(/\[ITEM\]([^\[]+)/g) || [];
-            items.forEach(item => {
-                const itemName = item.replace('[ITEM]', '').trim();
-                if (!currentPlayer.inventory.includes(itemName)) {
-                    currentPlayer.inventory.push(itemName);
-                    updateInventory();
-                }
-            });
-
-            // Обновление характеристик
-            const statUpdates = text.match(/\[STAT\](\w+)=(\d+)/g) || [];
-            statUpdates.forEach(update => {
-                const [_, stat, value] = update.match(/\[STAT\](\w+)=(\d+)/);
-                if (currentPlayer.stats[stat]) {
-                    currentPlayer.stats[stat] = parseInt(value);
-                    document.getElementById(stat).textContent = value;
-                }
-            });
-        }
-
-        function updateInventory() {
-            document.getElementById('inventoryItems').innerHTML = 
-                currentPlayer.inventory.map(item => `<div>${item}</div>`).join('');
-        }
-
-        function addMessage(text, sender, isTemp = false) {
-            const messages = document.getElementById('chatMessages');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}-message ${isTemp ? 'loading' : ''}`;
-            msgDiv.textContent = text;
-            messages.appendChild(msgDiv);
-            messages.scrollTop = messages.scrollHeight;
-            return msgDiv;
-        }
-
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendMessage();
-        }
+        // Инициализация генерации стартового изображения
+        generateImage("D&D стартовая локация в темном стиле", 'locationImage');
     </script>
 </body>
 </html>

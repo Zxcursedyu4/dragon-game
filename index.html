@@ -1,46 +1,63 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dragon Empire</title>
+    <title>Dragon RPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-color: #1e1e1e;
+            --bg-color: #0f0f15;
+            --card-color: #1a1a25;
             --text-color: #e0e0e0;
             --accent-color: #bb86fc;
             --secondary-color: #03dac6;
             --button-bg: #3700b3;
             --button-hover: #6200ee;
+            --error-color: #ff4444;
+            --success-color: #00C851;
+        }
+        
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
             padding: 0;
-            transition: all 0.3s;
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
         }
         
         .container {
             max-width: 100%;
-            padding: 15px;
+            padding: 10px;
+            padding-bottom: 70px;
         }
         
+        /* Табы */
         .tab-container {
             display: flex;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #333;
+            margin-bottom: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 5px;
         }
         
         .tab {
-            padding: 10px 20px;
+            padding: 10px 15px;
             cursor: pointer;
-            background: #252525;
+            background: #252535;
             margin-right: 5px;
-            border-radius: 8px 8px 0 0;
+            border-radius: 8px;
             transition: all 0.3s;
+            font-size: 14px;
+            flex-shrink: 0;
         }
         
         .tab.active {
@@ -57,76 +74,16 @@
             animation: fadeIn 0.5s;
         }
         
-        .dragon-pen {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .dragon-card {
-            background: var(--card-color);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: transform 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .dragon-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .dragon-emoji {
-            font-size: 50px;
-            margin-bottom: 10px;
-        }
-        
-        .dragon-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .dragon-rank {
-            font-size: 12px;
-            padding: 3px 8px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-bottom: 8px;
-        }
-        
-        .rank-C { background: #757575; }
-        .rank-B { background: #4caf50; }
-        .rank-A { background: #2196f3; }
-        .rank-S { background: #9c27b0; }
-        .rank-SS { background: #ff9800; }
-        .rank-SSS { background: #f44336; }
-        
-        .feed-btn {
-            background: var(--button-bg);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 12px;
-        }
-        
-        .feed-btn:hover {
-            background: var(--button-hover);
-        }
-        
+        /* Статус бар */
         .stats-bar {
             display: flex;
             justify-content: space-between;
-            background: #1e1e1e;
-            padding: 10px 15px;
+            background: #1a1a25;
+            padding: 8px 12px;
             border-radius: 10px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            font-size: 14px;
         }
         
         .stat {
@@ -136,25 +93,210 @@
         
         .stat-icon {
             margin-right: 5px;
-            font-size: 18px;
+            font-size: 16px;
         }
         
-        /* Roulette Styles */
+        /* Карточки драконов */
+        .dragon-pen {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .dragon-card {
+            background: var(--card-color);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dragon-card.selected {
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+        
+        .dragon-emoji {
+            font-size: 40px;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+        
+        .dragon-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .dragon-rank {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+        
+        .rank-C { background: #757575; }
+        .rank-B { background: #4caf50; }
+        .rank-A { background: #2196f3; }
+        .rank-S { background: #9c27b0; }
+        .rank-SS { background: #ff9800; }
+        .rank-SSS { background: #f44336; }
+        
+        .dragon-stats {
+            font-size: 11px;
+            margin: 6px 0;
+            text-align: left;
+        }
+        
+        .stat-bar {
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+        
+        .stat-fill {
+            height: 100%;
+            background: var(--secondary-color);
+            border-radius: 2px;
+        }
+        
+        .dragon-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        
+        .action-btn {
+            background: var(--button-bg);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 11px;
+            flex: 1;
+            margin: 0 2px;
+        }
+        
+        .action-btn:hover {
+            background: var(--button-hover);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .action-btn.feed {
+            background: #4CAF50;
+        }
+        
+        .action-btn.sell {
+            background: #FF5722;
+        }
+        
+        .action-btn.fuse {
+            background: #9C27B0;
+        }
+        
+        /* Боевая система */
+        .battle-container {
+            background: #1a1a25;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .battle-arena {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .battle-dragon {
+            text-align: center;
+            width: 40%;
+        }
+        
+        .battle-dragon-emoji {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+        
+        .battle-dragon-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .battle-vs {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .battle-log {
+            height: 150px;
+            overflow-y: auto;
+            background: #0f0f15;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: left;
+            font-size: 12px;
+        }
+        
+        .battle-message {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #252535;
+        }
+        
+        .battle-message.player {
+            color: var(--secondary-color);
+        }
+        
+        .battle-message.enemy {
+            color: #FF5252;
+        }
+        
+        .battle-message.system {
+            color: var(--accent-color);
+        }
+        
+        /* Рулетка */
         .roulette-container {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 15px;
+        }
+        
+        .roulette-wheel-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
         }
         
         .roulette-wheel {
-            width: 250px;
-            height: 250px;
-            margin: 0 auto;
-            position: relative;
+            width: 100%;
+            height: auto;
             border-radius: 50%;
-            background: #252525;
-            border: 5px solid var(--accent-color);
+            background: #252535;
+            border: 4px solid var(--accent-color);
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(187, 134, 252, 0.3);
+            position: relative;
+            box-shadow: 0 0 20px rgba(187, 134, 252, 0.2);
+            aspect-ratio: 1/1;
         }
         
         .roulette-item {
@@ -168,134 +310,119 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
         }
         
-        .roulette-center {
+        .roulette-pointer {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            background: var(--accent-color);
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(187, 134, 252, 0.5);
-        }
-        
-        .roulette-center:after {
-            content: "";
-            position: absolute;
-            top: -15px;
+            top: 0;
             left: 50%;
             transform: translateX(-50%);
-            border-width: 0 10px 15px;
-            border-style: solid;
-            border-color: transparent transparent var(--accent-color);
+            width: 30px;
+            height: 30px;
+            z-index: 10;
         }
         
-        .spin-btn {
-            background: var(--accent-color);
-            color: #000;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 25px;
-            font-weight: bold;
-            margin-top: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 15px rgba(187, 134, 252, 0.4);
+        .roulette-pointer:after {
+            content: "▼";
+            font-size: 30px;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(187, 134, 252, 0.7);
         }
         
-        .spin-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(187, 134, 252, 0.6);
-        }
-        
-        .spin-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        /* Shop Styles */
-        .shop-items {
+        .roulette-prizes {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 15px;
         }
         
-        .shop-item {
-            background: var(--card-color);
+        .roulette-prize {
+            background: #1a1a25;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        /* Кейсы */
+        .cases-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .case {
+            background: #1a1a25;
             border-radius: 10px;
             padding: 15px;
             text-align: center;
-            border: 1px solid #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
         
-        .shop-item:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-3px);
+        .case:after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
         }
         
-        .shop-item-emoji {
+        .case-common:after {
+            animation-delay: 0.5s;
+        }
+        
+        .case-epic:after {
+            background: linear-gradient(transparent, rgba(187, 134, 252, 0.2), transparent);
+        }
+        
+        .case-emoji {
             font-size: 40px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
-        .shop-item-name {
+        .case-name {
             font-weight: bold;
             margin-bottom: 5px;
         }
         
-        .shop-item-price {
-            color: var(--secondary-color);
-            margin-bottom: 10px;
+        .case-cooldown {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 5px;
         }
         
-        .buy-btn {
-            background: var(--button-bg);
-            color: white;
-            border: none;
-            padding: 5px 15px;
+        /* Навыки */
+        .skills-container {
+            margin-top: 15px;
+        }
+        
+        .skill {
+            background: #1a1a25;
             border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
+            padding: 8px;
+            margin-bottom: 8px;
             font-size: 12px;
         }
         
-        .buy-btn:hover {
-            background: var(--button-hover);
+        .skill-name {
+            font-weight: bold;
+            color: var(--accent-color);
         }
         
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .skill-desc {
+            margin-top: 3px;
+            color: #aaa;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .pulse {
-            animation: pulse 0.5s ease;
-        }
-        
-        /* Notification */
+        /* Уведомления */
         .notification {
             position: fixed;
             top: 20px;
@@ -307,15 +434,107 @@
             border-radius: 5px;
             z-index: 100;
             font-weight: bold;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
             display: none;
+            max-width: 90%;
+            text-align: center;
         }
         
-        /* Cooldown indicator */
-        .cooldown {
-            font-size: 12px;
-            color: #aaa;
-            margin-top: 10px;
+        /* Нижнее меню */
+        .bottom-menu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a25;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+            z-index: 50;
+        }
+        
+        .menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .menu-btn.active {
+            color: var(--accent-color);
+            background: rgba(187, 134, 252, 0.1);
+        }
+        
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        
+        @keyframes floatUp {
+            0% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+        
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+        
+        .shake {
+            animation: shake 0.5s ease;
+        }
+        
+        /* Адаптация для маленьких экранов */
+        @media (max-width: 400px) {
+            .dragon-pen {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .dragon-emoji {
+                font-size: 30px;
+            }
+            
+            .dragon-name {
+                font-size: 12px;
+            }
+            
+            .action-btn {
+                font-size: 10px;
+                padding: 3px 5px;
+            }
+            
+            .menu-btn {
+                font-size: 20px;
+                padding: 5px 10px;
+            }
         }
     </style>
 </head>
@@ -326,21 +545,23 @@
         <div class="stats-bar">
             <div class="stat">
                 <span class="stat-icon">💰</span>
-                <span id="coins">1000</span>
+                <span id="coins">0</span>
             </div>
             <div class="stat">
                 <span class="stat-icon">🍗</span>
-                <span id="food">20</span>
+                <span id="food">0</span>
             </div>
             <div class="stat">
-                <span class="stat-icon">✨</span>
-                <span id="boost">0</span>
+                <span class="stat-icon">⚔️</span>
+                <span id="battle-points">0</span>
             </div>
         </div>
         
         <div class="tab-container">
             <div class="tab active" onclick="switchTab('dragons')">Драконы</div>
+            <div class="tab" onclick="switchTab('battle')">Дуэли</div>
             <div class="tab" onclick="switchTab('roulette')">Рулетка</div>
+            <div class="tab" onclick="switchTab('cases')">Кейсы</div>
             <div class="tab" onclick="switchTab('shop')">Магазин</div>
         </div>
         
@@ -351,22 +572,93 @@
             </div>
         </div>
         
+        <div id="battle" class="tab-content">
+            <h2>Драконьи дуэли</h2>
+            <div id="battleSelection" class="battle-container">
+                <p>Выберите дракона для боя:</p>
+                <div class="dragon-pen" id="battleDragonPen">
+                    <!-- Battle dragons will be added here -->
+                </div>
+            </div>
+            
+            <div id="battleArena" class="battle-container" style="display: none;">
+                <div class="battle-arena">
+                    <div class="battle-dragon" id="playerDragon">
+                        <div class="battle-dragon-emoji" id="playerEmoji">🐲</div>
+                        <div class="battle-dragon-name" id="playerName">Ваш дракон</div>
+                        <div class="dragon-stats">
+                            <div>HP: <span id="playerHp">100/100</span></div>
+                            <div class="stat-bar">
+                                <div class="stat-fill" id="playerHpBar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="battle-vs">VS</div>
+                    <div class="battle-dragon" id="enemyDragon">
+                        <div class="battle-dragon-emoji" id="enemyEmoji">🐉</div>
+                        <div class="battle-dragon-name" id="enemyName">Противник</div>
+                        <div class="dragon-stats">
+                            <div>HP: <span id="enemyHp">100/100</span></div>
+                            <div class="stat-bar">
+                                <div class="stat-fill" id="enemyHpBar" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="battle-log" id="battleLog"></div>
+                
+                <button class="action-btn" id="attackBtn" onclick="battleAttack()" style="display: none;">Атаковать</button>
+                <button class="action-btn" id="specialBtn" onclick="battleSpecial()" style="display: none;">Особый навык</button>
+                <button class="action-btn" id="fleeBtn" onclick="battleFlee()" style="display: none; background: var(--error-color);">Сбежать</button>
+                <button class="action-btn" id="newBattleBtn" onclick="resetBattle()" style="display: none; background: var(--accent-color);">Новый бой</button>
+            </div>
+        </div>
+        
         <div id="roulette" class="tab-content">
             <h2>Ежедневная рулетка</h2>
             <p>Крутите раз в 24 часа и получайте ценные призы!</p>
             
             <div class="roulette-container">
-                <div class="roulette-wheel" id="rouletteWheel">
-                    <!-- Roulette items will be added here -->
+                <div class="roulette-wheel-container">
+                    <div class="roulette-wheel" id="rouletteWheel">
+                        <!-- Roulette items will be added here -->
+                    </div>
+                    <div class="roulette-pointer"></div>
                 </div>
-                <button class="spin-btn" id="spinBtn" onclick="spinRoulette()">Крутить!</button>
+                
+                <button class="action-btn" id="spinBtn" onclick="spinRoulette()" style="margin-top: 15px; width: 100%; max-width: 200px;">Крутить!</button>
                 <div class="cooldown" id="cooldown"></div>
+                
+                <h3 style="margin-top: 20px;">Возможные призы:</h3>
+                <div class="roulette-prizes" id="roulettePrizes">
+                    <!-- Prizes will be added here -->
+                </div>
+            </div>
+        </div>
+        
+        <div id="cases" class="tab-content">
+            <h2>Кейсы с наградами</h2>
+            <p>Открывайте кейсы и получайте ценные предметы!</p>
+            
+            <div class="cases-container">
+                <div class="case case-common" onclick="openCase('common')">
+                    <div class="case-emoji">🎁</div>
+                    <div class="case-name">Обычный кейс</div>
+                    <div class="case-cooldown" id="commonCaseCooldown">Доступно сейчас</div>
+                </div>
+                
+                <div class="case case-epic" onclick="openCase('epic')">
+                    <div class="case-emoji">💎</div>
+                    <div class="case-name">Эпический кейс</div>
+                    <div class="case-cooldown" id="epicCaseCooldown">Доступно сейчас</div>
+                </div>
             </div>
         </div>
         
         <div id="shop" class="tab-content">
-            <h2>Магазин драконов</h2>
-            <p>Покупайте драконов разных рангов и получайте бонусы!</p>
+            <h2>Магазин</h2>
+            <p>Покупайте корм для своих драконов!</p>
             
             <div class="shop-items" id="shopItems">
                 <!-- Shop items will be added here -->
@@ -374,31 +666,120 @@
         </div>
     </div>
 
+    <div class="bottom-menu">
+        <button class="menu-btn active" onclick="switchTab('dragons')">🐉</button>
+        <button class="menu-btn" onclick="switchTab('battle')">⚔️</button>
+        <button class="menu-btn" onclick="switchTab('roulette')">🎰</button>
+        <button class="menu-btn" onclick="switchTab('cases')">🎁</button>
+        <button class="menu-btn" onclick="switchTab('shop')">🛒</button>
+    </div>
+
     <script>
         // Game data
         const game = {
-            coins: 1000,
-            food: 20,
-            boost: 0,
+            coins: 0,
+            food: 0,
+            battlePoints: 0,
             dragons: [],
+            selectedDragon: null,
             lastSpin: null,
+            lastCommonCase: null,
+            lastEpicCase: null,
+            inBattle: false,
+            battleEnemy: null,
+            battleTurn: 0,
+            
             dragonTypes: [
-                { emoji: "🐲", name: "Обычный дракон", rank: "C", price: 100, bonus: "1x монеты" },
-                { emoji: "🐉", name: "Редкий дракон", rank: "B", price: 300, bonus: "1.5x монеты" },
-                { emoji: "🔥", name: "Огненный дракон", rank: "A", price: 800, bonus: "2x монеты + огненный щит" },
-                { emoji: "🦎", name: "Дракон-невидимка", rank: "S", price: 2000, bonus: "3x монеты + невидимость" },
-                { emoji: "🐊", name: "Дракон-король", rank: "SS", price: 5000, bonus: "5x монеты + королевская аура" },
-                { emoji: "✨", name: "Легендарный дракон", rank: "SSS", price: 15000, bonus: "10x монеты + все бонусы" }
+                { 
+                    emoji: "🐲", 
+                    name: "Обычный дракон", 
+                    rank: "C", 
+                    price: 100, 
+                    hp: 80, 
+                    attack: 10, 
+                    defense: 5, 
+                    speed: 8,
+                    skills: ["Укус"],
+                    special: { name: "Хвостовой удар", power: 15, cooldown: 3 }
+                },
+                { 
+                    emoji: "🐉", 
+                    name: "Редкий дракон", 
+                    rank: "B", 
+                    price: 300, 
+                    hp: 100, 
+                    attack: 15, 
+                    defense: 8, 
+                    speed: 10,
+                    skills: ["Укус", "Огненное дыхание"],
+                    special: { name: "Пламенный выдох", power: 25, cooldown: 4 }
+                },
+                { 
+                    emoji: "🔥", 
+                    name: "Огненный дракон", 
+                    rank: "A", 
+                    price: 800, 
+                    hp: 120, 
+                    attack: 20, 
+                    defense: 10, 
+                    speed: 12,
+                    skills: ["Укус", "Огненное дыхание", "Щит пламени"],
+                    special: { name: "Вулканический взрыв", power: 35, cooldown: 5 }
+                },
+                { 
+                    emoji: "🦎", 
+                    name: "Дракон-невидимка", 
+                    rank: "S", 
+                    price: 2000, 
+                    hp: 100, 
+                    attack: 25, 
+                    defense: 15, 
+                    speed: 20,
+                    skills: ["Укус", "Невидимость", "Ядовитый коготь"],
+                    special: { name: "Теневой удар", power: 40, cooldown: 4 }
+                },
+                { 
+                    emoji: "🐊", 
+                    name: "Дракон-король", 
+                    rank: "SS", 
+                    price: 5000, 
+                    hp: 150, 
+                    attack: 30, 
+                    defense: 20, 
+                    speed: 15,
+                    skills: ["Укус", "Королевский рев", "Бронированная чешуя"],
+                    special: { name: "Королевская ярость", power: 50, cooldown: 6 }
+                },
+                { 
+                    emoji: "✨", 
+                    name: "Легендарный дракон", 
+                    rank: "SSS", 
+                    price: 15000, 
+                    hp: 200, 
+                    attack: 40, 
+                    defense: 25, 
+                    speed: 18,
+                    skills: ["Укус", "Все навыки", "Божественная защита"],
+                    special: { name: "Апокалипсис", power: 70, cooldown: 7 }
+                }
             ],
+            
             rouletteItems: [
+                { type: "coins", value: 50, emoji: "💰", color: "#FFD700", text: "50 монет" },
                 { type: "coins", value: 100, emoji: "💰", color: "#FFD700", text: "100 монет" },
-                { type: "coins", value: 200, emoji: "💰", color: "#FFD700", text: "200 монет" },
                 { type: "food", value: 10, emoji: "🍗", color: "#FF6347", text: "10 корма" },
+                { type: "food", value: 20, emoji: "🍗", color: "#FF6347", text: "20 корма" },
                 { type: "boost", value: 1, emoji: "⚡", color: "#00BFFF", text: "Буст +1" },
                 { type: "dragon", value: "B", emoji: "🐉", color: "#4CAF50", text: "Редкий дракон" },
                 { type: "dragon", value: "A", emoji: "🔥", color: "#2196F3", text: "Огненный дракон" },
-                { type: "dragon", value: "S", emoji: "🦎", color: "#9C27B0", text: "Дракон-невидимка" },
-                { type: "jackpot", value: "SSS", emoji: "✨", color: "#F44336", text: "ДЖЕКПОТ!" }
+                { type: "jackpot", value: "S", emoji: "🦎", color: "#9C27B0", text: "Дракон-невидимка" }
+            ],
+            
+            shopItems: [
+                { type: "food", amount: 5, price: 10, emoji: "🍗" },
+                { type: "food", amount: 15, price: 25, emoji: "🍗" },
+                { type: "food", amount: 30, price: 45, emoji: "🍗" },
+                { type: "food", amount: 50, price: 70, emoji: "🍗" }
             ]
         };
 
@@ -411,18 +792,65 @@
         function loadGame() {
             const savedGame = localStorage.getItem('dragonGame');
             if (savedGame) {
-                Object.assign(game, JSON.parse(savedGame));
-            }
-            
-            // Add starter dragons if empty
-            if (game.dragons.length === 0) {
+                const parsed = JSON.parse(savedGame);
+                Object.assign(game, parsed);
+                
+                // Convert old dragon format to new format
+                if (game.dragons.length > 0 && !game.dragons[0].skills) {
+                    game.dragons = game.dragons.map(dragon => {
+                        const type = game.dragonTypes.find(dt => dt.rank === dragon.type);
+                        return {
+                            ...dragon,
+                            skills: type ? [...type.skills] : ["Укус"],
+                            special: type ? {...type.special} : { name: "Удар", power: 10, cooldown: 3 },
+                            specialCooldown: 0,
+                            xp: dragon.xp || 0,
+                            level: dragon.level || 1,
+                            maxHp: type ? type.hp * (dragon.level || 1) : 80,
+                            hp: type ? type.hp * (dragon.level || 1) : 80,
+                            attack: type ? type.attack * (dragon.level || 1) : 10,
+                            defense: type ? type.defense * (dragon.level || 1) : 5,
+                            speed: type ? type.speed * (dragon.level || 1) : 8
+                        };
+                    });
+                }
+            } else {
+                // New game - add starter dragons
                 game.dragons = [
-                    { type: "C", emoji: "🐲", name: "Обычный дракон", fedToday: 0 },
-                    { type: "C", emoji: "🐲", name: "Обычный дракон", fedToday: 0 }
+                    createDragon("C"),
+                    createDragon("C")
                 ];
             }
             
+            // Start passive income
+            startPassiveIncome();
+            
             updateUI();
+        }
+
+        // Create new dragon
+        function createDragon(rank) {
+            const type = game.dragonTypes.find(dt => dt.rank === rank);
+            if (!type) return null;
+            
+            return {
+                id: Date.now().toString(),
+                type: rank,
+                emoji: type.emoji,
+                name: type.name,
+                skills: [...type.skills],
+                special: {...type.special},
+                specialCooldown: 0,
+                xp: 0,
+                level: 1,
+                maxHp: type.hp,
+                hp: type.hp,
+                attack: type.attack,
+                defense: type.defense,
+                speed: type.speed,
+                fedToday: 0,
+                battlesWon: 0
+            };
         }
 
         // Save game
@@ -430,12 +858,38 @@
             localStorage.setItem('dragonGame', JSON.stringify(game));
         }
 
+        // Passive income system
+        function startPassiveIncome() {
+            setInterval(() => {
+                // Coins from dragons
+                const coinsEarned = game.dragons.reduce((sum, dragon) => {
+                    return sum + (dragon.type === 'C' ? 1 : 
+                                 dragon.type === 'B' ? 2 : 
+                                 dragon.type === 'A' ? 4 : 
+                                 dragon.type === 'S' ? 8 : 
+                                 dragon.type === 'SS' ? 15 : 30);
+                }, 0);
+                
+                game.coins += coinsEarned;
+                
+                // Food from dragons (chance based)
+                game.dragons.forEach(dragon => {
+                    if (Math.random() < 0.1) {
+                        game.food += 1;
+                    }
+                });
+                
+                updateUI();
+                saveGame();
+            }, 60000); // Every minute
+        }
+
         // Update UI
         function updateUI() {
             // Update stats
             document.getElementById('coins').textContent = game.coins;
             document.getElementById('food').textContent = game.food;
-            document.getElementById('boost').textContent = game.boost;
+            document.getElementById('battle-points').textContent = game.battlePoints;
             
             // Update dragons
             const dragonPen = document.getElementById('dragonPen');
@@ -444,19 +898,38 @@
             game.dragons.forEach((dragon, index) => {
                 const dragonType = game.dragonTypes.find(dt => dt.rank === dragon.type);
                 const dragonCard = document.createElement('div');
-                dragonCard.className = 'dragon-card';
+                dragonCard.className = `dragon-card ${dragon === game.selectedDragon ? 'selected' : ''}`;
                 dragonCard.innerHTML = `
                     <div class="dragon-emoji">${dragon.emoji}</div>
-                    <div class="dragon-name">${dragon.name}</div>
+                    <div class="dragon-name">${dragon.name} Lv.${dragon.level}</div>
                     <div class="dragon-rank rank-${dragon.type}">${dragon.type}</div>
-                    <div class="dragon-bonus">${dragonType ? dragonType.bonus : ''}</div>
-                    <button class="feed-btn" onclick="feedDragon(${index})">Кормить (1🍗)</button>
+                    <div class="dragon-stats">
+                        <div>XP: ${dragon.xp}/${dragon.level * 100}</div>
+                        <div class="stat-bar">
+                            <div class="stat-fill" style="width: ${(dragon.xp / (dragon.level * 100)) * 100}%"></div>
+                        </div>
+                        <div>HP: ${dragon.hp}/${dragon.maxHp}</div>
+                        <div class="stat-bar">
+                            <div class="stat-fill" style="width: ${(dragon.hp / dragon.maxHp) * 100}%"></div>
+                        </div>
+                        <div>⚔️${dragon.attack} 🛡️${dragon.defense} 🏃${dragon.speed}</div>
+                    </div>
+                    <div class="dragon-actions">
+                        <button class="action-btn feed" onclick="feedDragon(${index})" ${game.food <= 0 ? 'disabled' : ''}>Кормить</button>
+                        <button class="action-btn sell" onclick="sellDragon(${index})">Продать</button>
+                    </div>
                 `;
                 dragonPen.appendChild(dragonCard);
             });
             
+            // Update battle selection
+            updateBattleSelection();
+            
             // Update roulette cooldown
             updateRouletteCooldown();
+            
+            // Update cases cooldown
+            updateCasesCooldown();
             
             // Update shop
             updateShop();
@@ -474,8 +947,13 @@
                 content.classList.remove('active');
             });
             
+            document.querySelectorAll('.menu-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
             document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
             document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.menu-btn[onclick="switchTab('${tabId}')"]`).classList.add('active');
         }
 
         // Feed dragon
@@ -486,24 +964,30 @@
             }
             
             const dragon = game.dragons[index];
+            
+            // Can feed only 3 times per day
+            if (dragon.fedToday >= 3) {
+                showNotification('Этот дракон уже сыт!');
+                return;
+            }
+            
             game.food--;
-            
-            // Calculate coins based on dragon rank
-            let coinsEarned = 5;
-            if (dragon.type === 'B') coinsEarned = 8;
-            else if (dragon.type === 'A') coinsEarned = 12;
-            else if (dragon.type === 'S') coinsEarned = 20;
-            else if (dragon.type === 'SS') coinsEarned = 35;
-            else if (dragon.type === 'SSS') coinsEarned = 60;
-            
-            // Apply boost
-            coinsEarned *= (1 + game.boost * 0.5);
-            coinsEarned = Math.floor(coinsEarned);
-            
-            game.coins += coinsEarned;
             dragon.fedToday = (dragon.fedToday || 0) + 1;
             
-            showNotification(`+${coinsEarned} монет!`);
+            // Add XP based on dragon rank
+            let xpGained = 10;
+            if (dragon.type === 'B') xpGained = 15;
+            else if (dragon.type === 'A') xpGained = 20;
+            else if (dragon.type === 'S') xpGained = 30;
+            else if (dragon.type === 'SS') xpGained = 45;
+            else if (dragon.type === 'SSS') xpGained = 70;
+            
+            dragon.xp += xpGained;
+            
+            // Check for level up
+            checkLevelUp(dragon);
+            
+            showNotification(`${dragon.name} получил ${xpGained} XP!`);
             updateUI();
             
             // Animate dragon card
@@ -514,15 +998,321 @@
             }, 500);
         }
 
-        // Roulette functions
+        // Check for level up
+        function checkLevelUp(dragon) {
+            const xpNeeded = dragon.level * 100;
+            
+            if (dragon.xp >= xpNeeded) {
+                dragon.xp -= xpNeeded;
+                dragon.level++;
+                
+                // Increase stats
+                const type = game.dragonTypes.find(dt => dt.rank === dragon.type);
+                if (type) {
+                    dragon.maxHp = type.hp * dragon.level;
+                    dragon.hp = dragon.maxHp; // Full heal on level up
+                    dragon.attack = type.attack * dragon.level;
+                    dragon.defense = type.defense * dragon.level;
+                    dragon.speed = type.speed * dragon.level;
+                }
+                
+                showNotification(`${dragon.name} достиг уровня ${dragon.level}!`);
+                
+                // Check for another level up
+                checkLevelUp(dragon);
+            }
+        }
+
+        // Sell dragon
+        function sellDragon(index) {
+            const dragon = game.dragons[index];
+            const dragonType = game.dragonTypes.find(dt => dt.rank === dragon.type);
+            
+            if (!dragonType) return;
+            
+            // Calculate sell price (50% of base price + bonus for level)
+            let sellPrice = Math.floor(dragonType.price * 0.5);
+            sellPrice += dragon.level * 10;
+            
+            if (confirm(`Продать ${dragon.name} за ${sellPrice} монет?`)) {
+                game.coins += sellPrice;
+                game.dragons.splice(index, 1);
+                
+                if (game.selectedDragon === dragon) {
+                    game.selectedDragon = null;
+                }
+                
+                showNotification(`Вы продали ${dragon.name} за ${sellPrice} монет!`);
+                updateUI();
+            }
+        }
+
+        // Battle system
+        function updateBattleSelection() {
+            const battlePen = document.getElementById('battleDragonPen');
+            battlePen.innerHTML = '';
+            
+            game.dragons.forEach((dragon, index) => {
+                const dragonCard = document.createElement('div');
+                dragonCard.className = `dragon-card ${dragon === game.selectedDragon ? 'selected' : ''}`;
+                dragonCard.onclick = () => selectDragonForBattle(index);
+                dragonCard.innerHTML = `
+                    <div class="dragon-emoji">${dragon.emoji}</div>
+                    <div class="dragon-name">${dragon.name} Lv.${dragon.level}</div>
+                    <div class="dragon-rank rank-${dragon.type}">${dragon.type}</div>
+                    <div class="dragon-stats">
+                        <div>HP: ${dragon.hp}/${dragon.maxHp}</div>
+                        <div class="stat-bar">
+                            <div class="stat-fill" style="width: ${(dragon.hp / dragon.maxHp) * 100}%"></div>
+                        </div>
+                        <div>⚔️${dragon.attack} 🛡️${dragon.defense} 🏃${dragon.speed}</div>
+                    </div>
+                `;
+                battlePen.appendChild(dragonCard);
+            });
+        }
+
+        function selectDragonForBattle(index) {
+            game.selectedDragon = game.dragons[index];
+            updateUI();
+            showNotification(`${game.selectedDragon.name} выбран для боя!`);
+        }
+
+        function startBattle() {
+            if (!game.selectedDragon) {
+                showNotification('Выберите дракона для боя!');
+                return;
+            }
+            
+            if (game.selectedDragon.hp <= 0) {
+                showNotification('Этот дракон слишком слаб для боя!');
+                return;
+            }
+            
+            // Find enemy based on player dragon rank
+            const playerRank = game.selectedDragon.type;
+            const availableRanks = game.dragonTypes.filter(dt => dt.rank === playerRank);
+            const enemyRank = availableRanks.length > 0 ? playerRank : 'C';
+            
+            // Create enemy dragon
+            game.battleEnemy = createDragon(enemyRank);
+            game.battleEnemy.level = game.selectedDragon.level;
+            
+            // Adjust enemy stats slightly for balance
+            game.battleEnemy.maxHp = Math.floor(game.battleEnemy.maxHp * (0.9 + Math.random() * 0.3));
+            game.battleEnemy.hp = game.battleEnemy.maxHp;
+            game.battleEnemy.attack = Math.floor(game.battleEnemy.attack * (0.8 + Math.random() * 0.4));
+            game.battleEnemy.defense = Math.floor(game.battleEnemy.defense * (0.8 + Math.random() * 0.4));
+            game.battleEnemy.speed = Math.floor(game.battleEnemy.speed * (0.8 + Math.random() * 0.4));
+            
+            game.inBattle = true;
+            game.battleTurn = 0;
+            
+            // Reset special cooldown
+            game.selectedDragon.specialCooldown = 0;
+            
+            // Show battle UI
+            document.getElementById('battleSelection').style.display = 'none';
+            document.getElementById('battleArena').style.display = 'block';
+            
+            // Update battle UI
+            updateBattleUI();
+            
+            // Clear battle log
+            document.getElementById('battleLog').innerHTML = '';
+            
+            // Show battle buttons
+            document.getElementById('attackBtn').style.display = 'inline-block';
+            document.getElementById('specialBtn').style.display = 'inline-block';
+            document.getElementById('fleeBtn').style.display = 'inline-block';
+            document.getElementById('newBattleBtn').style.display = 'none';
+            
+            // Add battle start message
+            addBattleMessage(`Бой начинается: ${game.selectedDragon.name} vs ${game.battleEnemy.name}!`, 'system');
+        }
+
+        function updateBattleUI() {
+            if (!game.inBattle) return;
+            
+            // Player dragon
+            document.getElementById('playerEmoji').textContent = game.selectedDragon.emoji;
+            document.getElementById('playerName').textContent = `${game.selectedDragon.name} Lv.${game.selectedDragon.level}`;
+            document.getElementById('playerHp').textContent = `${game.selectedDragon.hp}/${game.selectedDragon.maxHp}`;
+            document.getElementById('playerHpBar').style.width = `${(game.selectedDragon.hp / game.selectedDragon.maxHp) * 100}%`;
+            
+            // Enemy dragon
+            document.getElementById('enemyEmoji').textContent = game.battleEnemy.emoji;
+            document.getElementById('enemyName').textContent = `${game.battleEnemy.name} Lv.${game.battleEnemy.level}`;
+            document.getElementById('enemyHp').textContent = `${game.battleEnemy.hp}/${game.battleEnemy.maxHp}`;
+            document.getElementById('enemyHpBar').style.width = `${(game.battleEnemy.hp / game.battleEnemy.maxHp) * 100}%`;
+            
+            // Update special button
+            const specialBtn = document.getElementById('specialBtn');
+            if (game.selectedDragon.specialCooldown > 0) {
+                specialBtn.textContent = `${game.selectedDragon.special.name} (${game.selectedDragon.specialCooldown})`;
+                specialBtn.disabled = true;
+            } else {
+                specialBtn.textContent = game.selectedDragon.special.name;
+                specialBtn.disabled = false;
+            }
+        }
+
+        function battleAttack() {
+            if (!game.inBattle) return;
+            
+            game.battleTurn++;
+            
+            // Player attacks first if speed is higher
+            if (game.selectedDragon.speed >= game.battleEnemy.speed) {
+                playerAttack();
+                if (game.battleEnemy.hp > 0) {
+                    enemyAttack();
+                }
+            } else {
+                enemyAttack();
+                if (game.selectedDragon.hp > 0) {
+                    playerAttack();
+                }
+            }
+            
+            // Reduce special cooldown
+            if (game.selectedDragon.specialCooldown > 0) {
+                game.selectedDragon.specialCooldown--;
+            }
+            
+            updateBattleUI();
+            checkBattleEnd();
+        }
+
+        function playerAttack() {
+            // Calculate damage
+            let damage = Math.max(1, game.selectedDragon.attack - Math.floor(game.battleEnemy.defense / 2));
+            
+            // Apply random variation
+            damage = Math.floor(damage * (0.8 + Math.random() * 0.4));
+            
+            game.battleEnemy.hp -= damage;
+            game.battleEnemy.hp = Math.max(0, game.battleEnemy.hp);
+            
+            addBattleMessage(`${game.selectedDragon.name} атакует и наносит ${damage} урона!`, 'player');
+        }
+
+        function enemyAttack() {
+            // Calculate damage
+            let damage = Math.max(1, game.battleEnemy.attack - Math.floor(game.selectedDragon.defense / 2));
+            
+            // Apply random variation
+            damage = Math.floor(damage * (0.8 + Math.random() * 0.4));
+            
+            game.selectedDragon.hp -= damage;
+            game.selectedDragon.hp = Math.max(0, game.selectedDragon.hp);
+            
+            addBattleMessage(`${game.battleEnemy.name} атакует и наносит ${damage} урона!`, 'enemy');
+        }
+
+        function battleSpecial() {
+            if (!game.inBattle || game.selectedDragon.specialCooldown > 0) return;
+            
+            game.battleTurn++;
+            
+            // Player uses special attack
+            let damage = Math.floor(game.selectedDragon.special.power * (0.9 + Math.random() * 0.2));
+            damage = Math.max(1, damage - Math.floor(game.battleEnemy.defense / 3));
+            
+            game.battleEnemy.hp -= damage;
+            game.battleEnemy.hp = Math.max(0, game.battleEnemy.hp);
+            
+            // Set cooldown
+            game.selectedDragon.specialCooldown = game.selectedDragon.special.cooldown;
+            
+            addBattleMessage(`${game.selectedDragon.name} использует ${game.selectedDragon.special.name} и наносит ${damage} урона!`, 'player');
+            
+            // Enemy attacks if still alive
+            if (game.battleEnemy.hp > 0) {
+                enemyAttack();
+            }
+            
+            updateBattleUI();
+            checkBattleEnd();
+        }
+
+        function battleFlee() {
+            if (!game.inBattle) return;
+            
+            const successChance = game.selectedDragon.speed / (game.selectedDragon.speed + game.battleEnemy.speed);
+            
+            if (Math.random() < successChance) {
+                addBattleMessage(`${game.selectedDragon.name} успешно сбежал от боя!`, 'system');
+                endBattle(false);
+            } else {
+                addBattleMessage(`${game.selectedDragon.name} не смог сбежать!`, 'system');
+                enemyAttack();
+                updateBattleUI();
+                checkBattleEnd();
+            }
+        }
+
+        function checkBattleEnd() {
+            if (game.selectedDragon.hp <= 0) {
+                addBattleMessage(`${game.selectedDragon.name} побежден!`, 'system');
+                endBattle(false);
+            } else if (game.battleEnemy.hp <= 0) {
+                // Calculate reward
+                const xpGain = 20 + game.battleEnemy.level * 5;
+                const coinGain = 10 + game.battleEnemy.level * 3;
+                
+                game.selectedDragon.xp += xpGain;
+                game.coins += coinGain;
+                game.selectedDragon.battlesWon = (game.selectedDragon.battlesWon || 0) + 1;
+                
+                // Check for level up
+                checkLevelUp(game.selectedDragon);
+                
+                addBattleMessage(`Победа! ${game.selectedDragon.name} получает ${xpGain} XP и ${coinGain} монет!`, 'system');
+                endBattle(true);
+            }
+        }
+
+        function endBattle(victory) {
+            game.inBattle = false;
+            
+            // Hide attack buttons
+            document.getElementById('attackBtn').style.display = 'none';
+            document.getElementById('specialBtn').style.display = 'none';
+            document.getElementById('fleeBtn').style.display = 'none';
+            
+            // Show new battle button
+            document.getElementById('newBattleBtn').style.display = 'inline-block';
+            
+            // Heal dragon after battle (25% of max HP)
+            if (victory && game.selectedDragon.hp > 0) {
+                const healAmount = Math.floor(game.selectedDragon.maxHp * 0.25);
+                game.selectedDragon.hp = Math.min(game.selectedDragon.maxHp, game.selectedDragon.hp + healAmount);
+                addBattleMessage(`${game.selectedDragon.name} восстанавливает ${healAmount} HP после боя.`, 'system');
+            }
+            
+            updateUI();
+        }
+
+        function resetBattle() {
+            document.getElementById('battleSelection').style.display = 'block';
+            document.getElementById('battleArena').style.display = 'none';
+            updateUI();
+        }
+
+        function addBattleMessage(message, type) {
+            const log = document.getElementById('battleLog');
+            const messageElement = document.createElement('div');
+            messageElement.className = `battle-message ${type}`;
+            messageElement.textContent = message;
+            log.appendChild(messageElement);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Roulette system
         function setupRoulette() {
             const wheel = document.getElementById('rouletteWheel');
             wheel.innerHTML = '';
-            
-            const center = document.createElement('div');
-            center.className = 'roulette-center';
-            center.innerHTML = '🎰';
-            wheel.appendChild(center);
             
             const itemAngle = 360 / game.rouletteItems.length;
             
@@ -533,6 +1323,17 @@
                 itemElement.style.background = item.color;
                 itemElement.innerHTML = `<div style="transform: skewY(${itemAngle - 90}deg) rotate(${itemAngle/2}deg);">${item.emoji}</div>`;
                 wheel.appendChild(itemElement);
+            });
+            
+            // Setup prizes list
+            const prizesContainer = document.getElementById('roulettePrizes');
+            prizesContainer.innerHTML = '';
+            
+            game.rouletteItems.forEach(item => {
+                const prizeElement = document.createElement('div');
+                prizeElement.className = 'roulette-prize';
+                prizeElement.innerHTML = `${item.emoji} ${item.text}`;
+                prizesContainer.appendChild(prizeElement);
             });
         }
 
@@ -602,24 +1403,14 @@
                 case 'dragon':
                     const dragonType = game.dragonTypes.find(dt => dt.rank === prize.value);
                     if (dragonType) {
-                        game.dragons.push({
-                            type: dragonType.rank,
-                            emoji: dragonType.emoji,
-                            name: dragonType.name,
-                            fedToday: 0
-                        });
+                        game.dragons.push(createDragon(dragonType.rank));
                         message = `Вы получили ${dragonType.name} (${dragonType.rank})!`;
                     }
                     break;
                 case 'jackpot':
                     const sssDragon = game.dragonTypes.find(dt => dt.rank === 'SSS');
                     if (sssDragon) {
-                        game.dragons.push({
-                            type: sssDragon.rank,
-                            emoji: sssDragon.emoji,
-                            name: sssDragon.name,
-                            fedToday: 0
-                        });
+                        game.dragons.push(createDragon(sssDragon.rank));
                         game.coins += 5000;
                         game.boost += 3;
                         message = `ДЖЕКПОТ!!! Вы получили ${sssDragon.name} + 5000 монет + буст +3!`;
@@ -631,43 +1422,142 @@
             updateUI();
         }
 
-        // Shop functions
+        // Cases system
+        function updateCasesCooldown() {
+            const now = new Date();
+            
+            // Common case (4 hours)
+            if (game.lastCommonCase) {
+                const lastOpen = new Date(game.lastCommonCase);
+                const hoursDiff = (now - lastOpen) / (1000 * 60 * 60);
+                
+                if (hoursDiff < 4) {
+                    const hoursLeft = Math.floor(4 - hoursDiff);
+                    const minutesLeft = Math.floor((4 - hoursDiff - hoursLeft) * 60);
+                    document.getElementById('commonCaseCooldown').textContent = `Доступно через: ${hoursLeft}ч ${minutesLeft}м`;
+                } else {
+                    document.getElementById('commonCaseCooldown').textContent = 'Доступно сейчас';
+                }
+            } else {
+                document.getElementById('commonCaseCooldown').textContent = 'Доступно сейчас';
+            }
+            
+            // Epic case (12 hours)
+            if (game.lastEpicCase) {
+                const lastOpen = new Date(game.lastEpicCase);
+                const hoursDiff = (now - lastOpen) / (1000 * 60 * 60);
+                
+                if (hoursDiff < 12) {
+                    const hoursLeft = Math.floor(12 - hoursDiff);
+                    const minutesLeft = Math.floor((12 - hoursDiff - hoursLeft) * 60);
+                    document.getElementById('epicCaseCooldown').textContent = `Доступно через: ${hoursLeft}ч ${minutesLeft}м`;
+                } else {
+                    document.getElementById('epicCaseCooldown').textContent = 'Доступно сейчас';
+                }
+            } else {
+                document.getElementById('epicCaseCooldown').textContent = 'Доступно сейчас';
+            }
+        }
+
+        function openCase(caseType) {
+            const now = new Date();
+            let lastOpen, cooldown;
+            
+            if (caseType === 'common') {
+                lastOpen = game.lastCommonCase ? new Date(game.lastCommonCase) : null;
+                cooldown = 4;
+            } else {
+                lastOpen = game.lastEpicCase ? new Date(game.lastEpicCase) : null;
+                cooldown = 12;
+            }
+            
+            // Check cooldown
+            if (lastOpen) {
+                const hoursDiff = (now - lastOpen) / (1000 * 60 * 60);
+                if (hoursDiff < cooldown) {
+                    showNotification(`Кейс еще не доступен!`);
+                    return;
+                }
+            }
+            
+            // Open case
+            let rewards = [];
+            
+            if (caseType === 'common') {
+                // Common case rewards
+                const food = 5 + Math.floor(Math.random() * 20);
+                const coins = 10 + Math.floor(Math.random() * 40);
+                
+                game.food += food;
+                game.coins += coins;
+                
+                rewards.push(`${food} 🍗`, `${coins} 💰`);
+                
+                // Small chance for dragon (10%)
+                if (Math.random() < 0.1) {
+                    const possibleDragons = game.dragonTypes.filter(d => d.rank === 'C' || d.rank === 'B');
+                    const dragon = possibleDragons[Math.floor(Math.random() * possibleDragons.length)];
+                    
+                    game.dragons.push(createDragon(dragon.rank));
+                    rewards.push(`${dragon.name} (${dragon.rank})`);
+                }
+                
+                game.lastCommonCase = now.toISOString();
+            } else {
+                // Epic case rewards
+                const food = 50 + Math.floor(Math.random() * 100);
+                const coins = 100 + Math.floor(Math.random() * 200);
+                
+                game.food += food;
+                game.coins += coins;
+                
+                rewards.push(`${food} 🍗`, `${coins} 💰`);
+                
+                // High chance for dragon (70%)
+                if (Math.random() < 0.7) {
+                    const possibleDragons = game.dragonTypes.filter(d => d.rank === 'B' || d.rank === 'A' || d.rank === 'S');
+                    const dragon = possibleDragons[Math.floor(Math.random() * possibleDragons.length)];
+                    
+                    game.dragons.push(createDragon(dragon.rank));
+                    rewards.push(`${dragon.name} (${dragon.rank})`);
+                }
+                
+                game.lastEpicCase = now.toISOString();
+            }
+            
+            showNotification(`Вы открыли ${caseType === 'common' ? 'обычный' : 'эпический'} кейс и получили: ${rewards.join(', ')}`);
+            updateUI();
+        }
+
+        // Shop system
         function updateShop() {
             const shopItems = document.getElementById('shopItems');
             shopItems.innerHTML = '';
             
-            game.dragonTypes.forEach((dragon, index) => {
+            game.shopItems.forEach((item, index) => {
                 const shopItem = document.createElement('div');
                 shopItem.className = 'shop-item';
                 shopItem.innerHTML = `
-                    <div class="shop-item-emoji">${dragon.emoji}</div>
-                    <div class="shop-item-name">${dragon.name}</div>
-                    <div class="dragon-rank rank-${dragon.rank}">${dragon.rank}</div>
-                    <div class="shop-item-bonus">${dragon.bonus}</div>
-                    <div class="shop-item-price">${dragon.price} 💰</div>
-                    <button class="buy-btn" onclick="buyDragon(${index})">Купить</button>
+                    <div style="font-size: 30px;">${item.emoji} ×${item.amount}</div>
+                    <div style="margin: 10px 0;">${item.price} 💰</div>
+                    <button class="buy-btn" onclick="buyShopItem(${index})" ${game.coins < item.price ? 'disabled' : ''}>Купить</button>
                 `;
                 shopItems.appendChild(shopItem);
             });
         }
 
-        function buyDragon(index) {
-            const dragonType = game.dragonTypes[index];
+        function buyShopItem(index) {
+            const item = game.shopItems[index];
             
-            if (game.coins < dragonType.price) {
+            if (game.coins < item.price) {
                 showNotification('Недостаточно монет!');
                 return;
             }
             
-            game.coins -= dragonType.price;
-            game.dragons.push({
-                type: dragonType.rank,
-                emoji: dragonType.emoji,
-                name: dragonType.name,
-                fedToday: 0
-            });
+            game.coins -= item.price;
+            game.food += item.amount;
             
-            showNotification(`Вы купили ${dragonType.name}!`);
+            showNotification(`Вы купили ${item.amount} корма за ${item.price} монет!`);
             updateUI();
         }
 
@@ -676,10 +1566,7 @@
             const notification = document.getElementById('notification');
             notification.textContent = message;
             notification.style.display = 'block';
-            
-            setTimeout(() => {
-                notification.style.opacity = '1';
-            }, 10);
+            notification.style.opacity = '1';
             
             setTimeout(() => {
                 notification.style.opacity = '0';
@@ -693,6 +1580,15 @@
         window.onload = function() {
             loadGame();
             setupRoulette();
+            
+            // Start battle when battle tab is opened
+            document.querySelector('.tab[onclick="switchTab(\'battle\')"]').addEventListener('click', function() {
+                setTimeout(() => {
+                    if (document.getElementById('battle').classList.contains('active') && !game.inBattle) {
+                        startBattle();
+                    }
+                }, 100);
+            });
         };
     </script>
 </body>

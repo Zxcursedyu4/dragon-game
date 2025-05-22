@@ -9,137 +9,157 @@
             color: #e0e0ff;
             font-family: 'Courier New', monospace;
             margin: 0;
-            min-height: 100vh;
-            overflow: hidden;
+            height: 100vh;
+            display: flex;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        .chat-container {
+            flex: 3;
+            border-right: 2px solid #8a2be2;
             padding: 20px;
-            animation: fadeIn 1s;
+            display: flex;
+            flex-direction: column;
         }
 
-        .player-card {
-            background: linear-gradient(145deg, #2a002a, #000);
-            border: 2px solid #8a2be2;
-            border-radius: 10px;
+        .game-container {
+            flex: 1;
             padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 0 15px #8a2be2;
+            overflow-y: auto;
         }
 
-        button {
-            background: #4a004a;
-            color: white;
-            border: 1px solid #8a2be2;
-            padding: 10px 20px;
-            cursor: pointer;
-            transition: all 0.3s;
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            margin-bottom: 10px;
         }
 
-        button:hover {
-            background: #6a006a;
-            transform: scale(1.05);
+        .message {
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 5px;
+            animation: slideIn 0.3s ease-out;
         }
 
-        .warning {
-            border: 3px solid #ff0000 !important;
-            animation: pulse 1s infinite;
+        .dm-message {
+            background: #2a002a;
+            border-left: 3px solid #8a2be2;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .player-message {
+            background: #001a1a;
+            border-right: 3px solid #00ffff;
         }
 
-        @keyframes typewriter {
-            from { width: 0; }
-            to { width: 100%; }
+        .inventory-item {
+            padding: 5px;
+            margin: 3px 0;
+            background: #1a001a;
+            border-radius: 3px;
         }
 
-        .typing-effect {
-            overflow: hidden;
-            white-space: nowrap;
-            animation: typewriter 2s steps(40);
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <div class="container" id="mainScreen">
-        <!-- Экран создания персонажа -->
-        <div id="characterCreation">
-            <h1 class="typing-effect">Добро пожаловать в Dark Mysteries!</h1>
-            <div class="player-card">
-                <input type="text" id="playerName" placeholder="Введите имя">
-                <button onclick="createCharacter()">Создать</button>
-            </div>
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Ваше действие...">
+            <button onclick="sendMessage()">Отправить</button>
         </div>
+    </div>
 
-        <!-- Игровой интерфейс -->
-        <div id="gameInterface" style="display: none;">
-            <div class="player-card">
-                <h2 id="charName"></h2>
-                <div id="stats">
-                    <p>Сила: <span id="str">10</span></p>
-                    <p>Ловкость: <span id="dex">8</span></p>
-                </div>
-                <button onclick="showInventory()">Инвентарь</button>
+    <div class="game-container">
+        <div class="player-card">
+            <h2 id="charName"></h2>
+            <div id="stats">
+                <h3>Характеристики</h3>
+                <p>Сила: <span id="str">10</span></p>
+                <p>Ловкость: <span id="dex">8</span></p>
+            </div>
+            <div id="inventory">
+                <h3>Инвентарь</h3>
+                <div id="inventoryItems"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentPlayer = {};
-        
-        function createCharacter() {
-            const name = document.getElementById('playerName').value;
-            if (!name) {
-                alert('Введите имя!');
-                return;
+        let currentPlayer = {
+            inventory: [],
+            stats: { str: 10, dex: 8 }
+        };
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Добавляем сообщение игрока
+            addMessage(message, 'player');
+            input.value = '';
+
+            // Получаем ответ от ИИ
+            const dmResponse = await generateDMMessage(message);
+            addMessage(dmResponse, 'dm');
+
+            // Проверяем на наличие предметов в ответе
+            parseInventory(dmResponse);
+        }
+
+        async function generateDMMessage(prompt) {
+            try {
+                const response = await fetch('https://api.deepsic.com/v1/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer sk-bba273c9380a4f7486b80117979fd59d',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: `${prompt}\n[Ответ должен содержать предметы в формате [ITEM] Название]`
+                    })
+                });
+                
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                return "Мастер что-то задумался...";
             }
+        }
+
+        function parseInventory(text) {
+            const itemRegex = /\[ITEM\] (.*?)(?=\n|$)/g;
+            const items = [...text.matchAll(itemRegex)];
             
-            currentPlayer = {
-                name: name,
-                stats: { str: 10, dex: 8 },
-                inventory: []
-            };
-
-            document.getElementById('characterCreation').style.display = 'none';
-            document.getElementById('gameInterface').style.display = 'block';
-            document.getElementById('charName').textContent = name;
-        }
-
-        function showInventory() {
-            // Логика инвентаря с анимациями
-        }
-
-        // Античит система
-        const originalStats = {...currentPlayer.stats};
-        setInterval(() => {
-            if (JSON.stringify(currentPlayer.stats) !== JSON.stringify(originalStats)) {
-                showWarning();
-            }
-        }, 1000);
-
-        function showWarning() {
-            const elem = document.querySelector('.player-card');
-            elem.classList.add('warning');
-            setTimeout(() => elem.classList.remove('warning'), 2000);
-            alert('Вы не можете читерить в этой игре!!!');
-        }
-
-        // Интеграция с API (пример)
-        async function generateStory(prompt) {
-            const response = await fetch('https://api.deepsic.com/v1/story', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer sk-bba273c9380a4f7486b80117979fd59d',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: prompt })
+            items.forEach(match => {
+                const itemName = match[1];
+                if (!currentPlayer.inventory.includes(itemName)) {
+                    currentPlayer.inventory.push(itemName);
+                    updateInventoryUI();
+                }
             });
-            return await response.json();
+        }
+
+        function updateInventoryUI() {
+            const container = document.getElementById('inventoryItems');
+            container.innerHTML = currentPlayer.inventory
+                .map(item => `<div class="inventory-item">${item}</div>`)
+                .join('');
+        }
+
+        function addMessage(text, sender) {
+            const messages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            messageDiv.textContent = text;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
         }
     </script>
 </body>

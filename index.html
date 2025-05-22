@@ -6,119 +6,146 @@
     <title>Dragon Kingdom</title>
     <style>
         :root {
-            --primary: #FF6B6B;
-            --secondary: #4ECDC4;
-            --dark: #2D3436;
-            --light: #F9F9F9;
+            --bg: #0A0819;
+            --accent: #6A2C70;
+            --text: #FFFFFF;
+            --secondary: #B83B5E;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: 'Arial', sans-serif;
         }
 
         body {
-            font-family: 'Arial', sans-serif;
-            background: var(--dark);
-            color: var(--light);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
             padding: 15px;
+        }
+
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            z-index: 1000;
         }
 
         .container {
             max-width: 100%;
-            margin: 0 auto;
+            display: none;
         }
 
         .header {
             text-align: center;
-            padding: 20px 0;
-            border-bottom: 2px solid var(--primary);
-            margin-bottom: 15px;
-        }
-
-        .dragon-list {
-            display: grid;
-            gap: 10px;
+            padding: 25px 0;
             margin-bottom: 20px;
         }
 
+        .balance {
+            font-size: 24px;
+            color: var(--secondary);
+            margin: 15px 0;
+        }
+
         .dragon-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            position: relative;
+            background: rgba(106,44,112,0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 2px solid var(--accent);
         }
 
-        .dragon-emoji {
-            font-size: 40px;
-            margin-right: 15px;
+        .dragon-name {
+            font-size: 28px;
+            color: var(--secondary);
+            margin-bottom: 10px;
         }
 
-        .dragon-info {
-            flex-grow: 1;
+        .stats {
+            font-size: 20px;
         }
 
-        .action-buttons {
+        .buttons-grid {
             display: grid;
-            gap: 10px;
             grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 25px 0;
         }
 
         .btn {
-            background: var(--primary);
+            background: var(--accent);
             border: none;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 15px;
             color: white;
-            font-size: 16px;
+            font-size: 20px;
             cursor: pointer;
-            transition: opacity 0.3s;
+            transition: transform 0.2s;
         }
 
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn:active {
+            transform: scale(0.95);
         }
 
-        .modal {
+        .shop-modal {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             padding: 20px;
         }
 
-        .modal-content {
-            background: var(--dark);
-            padding: 20px;
-            border-radius: 12px;
-            max-width: 400px;
-            margin: 20px auto;
+        .shop-content {
+            background: var(--bg);
+            padding: 25px;
+            border-radius: 20px;
+            max-width: 500px;
+            margin: 50px auto;
+            border: 2px solid var(--accent);
         }
 
-        .timer {
-            font-size: 14px;
-            color: var(--secondary);
-            margin-top: 5px;
+        .dragon-option {
+            background: rgba(106,44,112,0.3);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 15px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Приветственный экран -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <h1 style="font-size: 42px; margin-bottom: 30px;">🐉 Dragon1EggBot 🐲</h1>
+        <p style="font-size: 24px; margin-bottom: 40px;">Добро пожаловать, игрок! Надеемся, наша игра вас порадует!</p>
+        <button class="btn" onclick="startGame()" style="font-size: 28px; padding: 20px 40px;">Начать игру!</button>
+    </div>
+
+    <!-- Основной интерфейс -->
+    <div class="container" id="mainInterface">
         <div class="header">
-            <h1>🐉 Dragon Kingdom</h1>
-            <p>Баланс: <span id="balance">1000</span>💰</p>
+            <h1 style="font-size: 36px;">DRAGON KINGDOM</h1>
+            <div class="balance">Баланс: <span id="balance">1500</span> ₽</div>
         </div>
 
-        <div id="dragonsList" class="dragon-list"></div>
+        <div id="dragonsList"></div>
 
-        <div class="action-buttons">
+        <div class="buttons-grid">
             <button class="btn" onclick="startMission()">Миссия (2ч)</button>
             <button class="btn" onclick="startTraining()">Тренировка (2ч)</button>
             <button class="btn" onclick="showShop()">Магазин</button>
@@ -126,24 +153,22 @@
         </div>
 
         <!-- Магазин -->
-        <div id="shopModal" class="modal">
-            <div class="modal-content">
-                <h2>🎁 Магазин кейсов</h2>
-                <div class="shop-items">
-                    <div class="shop-item" onclick="buyCase('common')">
-                        <h3>Обычный кейс</h3>
-                        <p>100💰</p>
-                    </div>
-                    <div class="shop-item" onclick="buyCase('rare')">
-                        <h3>Редкий кейс</h3>
-                        <p>300💰</p>
-                    </div>
-                    <div class="shop-item" onclick="buyCase('epic')">
-                        <h3>Эпический кейс</h3>
-                        <p>500💰</p>
-                    </div>
+        <div class="shop-modal" id="shopModal">
+            <div class="shop-content">
+                <h2 style="font-size: 32px; margin-bottom: 25px;">🏪 Магазин драконов</h2>
+                <div class="dragon-option" onclick="buyDragon('common')">
+                    <h3>🐉 Обычный дракон</h3>
+                    <p>Цена: 500 ₽</p>
                 </div>
-                <button class="btn" onclick="hideShop()">Закрыть</button>
+                <div class="dragon-option" onclick="buyDragon('rare')">
+                    <h3>🐲 Редкий дракон</h3>
+                    <p>Цена: 1500 ₽</p>
+                </div>
+                <div class="dragon-option" onclick="buyDragon('epic')">
+                    <h3>🔥 Эпический дракон</h3>
+                    <p>Цена: 3000 ₽</p>
+                </div>
+                <button class="btn" onclick="hideShop()" style="margin-top: 20px;">Закрыть</button>
             </div>
         </div>
     </div>
@@ -151,42 +176,59 @@
 <script>
 // Состояние игры
 let gameState = {
-    balance: 1000,
+    balance: 1500,
     dragons: [],
     lastMission: 0,
     lastTraining: 0,
     lastSpin: 0
 };
 
-// Класс Дракона
-class Dragon {
-    constructor(rarity) {
-        this.id = Date.now();
-        this.name = this.generateName();
-        this.rarity = rarity;
-        this.level = 1;
-        this.exp = 0;
-        this.stats = {
+// Запуск игры
+function startGame() {
+    document.getElementById('welcomeScreen').style.display = 'none';
+    document.getElementById('mainInterface').style.display = 'block';
+    loadGame();
+    if (gameState.dragons.length === 0) {
+        gameState.dragons.push(createDragon('common'));
+    }
+    updateUI();
+}
+
+// Создание дракона
+function createDragon(rarity) {
+    return {
+        id: Date.now(),
+        name: generateDragonName(),
+        rarity: rarity,
+        level: 1,
+        exp: 0,
+        stats: {
             strength: 10,
             agility: 10,
             stamina: 100
-        };
-        this.isBusy = false;
-    }
-
-    generateName() {
-        const names = ['Игнис', 'Вулкан', 'Смараг', 'Альдор', 'Зирикс'];
-        return names[Math.floor(Math.random() * names.length)];
-    }
+        },
+        isBusy: false
+    };
 }
 
-// Инициализация игры
-function initGame() {
-    loadGame();
-    if (gameState.dragons.length === 0) {
-        gameState.dragons.push(new Dragon('common'));
+// Генерация имени
+function generateDragonName() {
+    const names = ['Вулкан', 'Игнис', 'Смараг', 'Зирикс', 'Ночной Ястреб'];
+    return names[Math.floor(Math.random() * names.length)];
+}
+
+// Покупка дракона
+function buyDragon(rarity) {
+    const prices = {common: 500, rare: 1500, epic: 3000};
+    if (gameState.balance >= prices[rarity]) {
+        gameState.balance -= prices[rarity];
+        gameState.dragons.push(createDragon(rarity));
+        updateUI();
+        saveGame();
+        alert('Дракон куплен!');
+    } else {
+        alert('Недостаточно средств!');
     }
-    updateUI();
 }
 
 // Обновление интерфейса
@@ -198,31 +240,18 @@ function updateUI() {
         const card = document.createElement('div');
         card.className = 'dragon-card';
         card.innerHTML = `
-            <div class="dragon-emoji">${getDragonEmoji(dragon.rarity)}</div>
-            <div class="dragon-info">
-                <h3>${dragon.name}</h3>
+            <div class="dragon-name">${dragon.name}</div>
+            <div class="stats">
                 <p>Уровень: ${dragon.level}</p>
                 <p>Сила: ${dragon.stats.strength} 💪</p>
                 <p>Ловкость: ${dragon.stats.agility} 🏃</p>
-                ${dragon.isBusy ? '<div class="timer">Занят ещё: 1:59:00</div>' : ''}
+                <p>Выносливость: ${dragon.stats.stamina} ❤️</p>
             </div>
         `;
         list.appendChild(card);
     });
     
     document.getElementById('balance').textContent = gameState.balance;
-}
-
-// Получение эмодзи дракона
-function getDragonEmoji(rarity) {
-    const emojis = {
-        common: '🐉',
-        rare: '🐲',
-        epic: '🔥',
-        legendary: '✨',
-        ancient: '⚡'
-    };
-    return emojis[rarity] || '🐉';
 }
 
 // Система миссий
@@ -233,9 +262,10 @@ function startMission() {
     }
     
     gameState.lastMission = Date.now();
-    gameState.balance += 500;
+    gameState.balance += Math.floor(Math.random() * 500 + 300);
     updateUI();
     saveGame();
+    alert('Миссия завершена! Заработано: ' + (gameState.balance - 1500) + ' ₽');
 }
 
 // Магазин
@@ -258,8 +288,17 @@ function loadGame() {
     if (saved) gameState = JSON.parse(saved);
 }
 
-// Запуск игры
-window.onload = initGame;
+// Инициализация
+window.onload = function() {
+    loadGame();
+    if (!localStorage.getItem('firstVisit')) {
+        localStorage.setItem('firstVisit', 'true');
+    } else {
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('mainInterface').style.display = 'block';
+        updateUI();
+    }
+};
 setInterval(saveGame, 30000);
 </script>
 </body>

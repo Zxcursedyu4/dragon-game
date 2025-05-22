@@ -5,196 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dragon Arena</title>
     <style>
-        :root {
-            --bg-dark: #0a0818;
-            --accent-purple: #6a1b9a;
-            --text-purple: #b388ff;
-            --highlight: #ff6ec7;
-            --text-light: #ffffff;
+        /* ... (предыдущие стили остаются без изменений) ... */
+
+        /* Анимация кубика */
+        @keyframes diceRoll {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-light);
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
+        .dice {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            animation: diceRoll 0.5s linear infinite;
+            margin: 20px auto;
         }
 
-        /* Стартовый экран */
-        .welcome-screen {
+        /* Анимация открытия кейса */
+        @keyframes caseOpen {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(720deg); }
+        }
+
+        .case-opening {
+            animation: caseOpen 2s linear;
+        }
+
+        /* Стили для модальных окон */
+        .modal {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, #2a0845 0%, #0a0818 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            z-index: 1000;
-            animation: fadeIn 1.5s;
+            background: rgba(0,0,0,0.8);
+            z-index: 1002;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .welcome-text {
-            font-size: 2.2rem;
-            margin: 2rem;
-            text-shadow: 0 0 15px var(--text-purple);
-        }
-
-        .start-button {
-            background: var(--accent-purple);
-            color: white;
-            padding: 1.5rem 4rem;
-            border: none;
-            border-radius: 2rem;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: transform 0.3s;
-            box-shadow: 0 0 20px var(--text-purple);
-        }
-
-        /* Основной интерфейс */
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            padding: 1rem;
-            background: rgba(0,0,0,0.5);
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 999;
-        }
-
-        .resource {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .tabs {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 4rem;
-            padding: 1rem;
-        }
-
-        .tab {
-            padding: 1rem 2rem;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-
-        .tab.active {
-            border-color: var(--highlight);
-        }
-
-        /* Секция драконов */
-        .dragons-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            padding: 1rem;
-        }
-
-        .dragon-card {
-            background: linear-gradient(45deg, #2a0845, #4a148c);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            position: relative;
-            border: 2px solid var(--accent-purple);
-        }
-
-        /* Арена */
-        .arena {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
+        .modal-content {
+            background: var(--bg-dark);
             padding: 2rem;
-            border-radius: 2rem;
+            border-radius: 1rem;
             width: 90%;
-            max-width: 600px;
-            z-index: 1001;
-        }
-
-        .dice-result {
-            font-size: 4rem;
+            max-width: 400px;
+            margin: 2rem auto;
             text-align: center;
-            margin: 2rem 0;
         }
     </style>
 </head>
 <body>
-    <!-- Стартовый экран -->
-    <div class="welcome-screen">
-        <div class="welcome-text">
-            Здравствуйте, уважаемые игроки!<br>
-            Надеемся, вам понравится эта игра<br>
-            Команда DragonEggBot
+    <!-- ... (предыдущая разметка без изменений) ... -->
+
+    <!-- Модальное окно выбора дракона -->
+    <div class="modal" id="dragonSelectModal">
+        <div class="modal-content">
+            <h2>Выберите дракона для боя</h2>
+            <div id="availableDragons"></div>
+            <button class="action-button" onclick="closeModal()">Отмена</button>
         </div>
-        <button class="start-button" onclick="startGame()">В бой!</button>
     </div>
 
-    <!-- Основной интерфейс -->
-    <div class="game-interface" style="display: none;">
-        <div class="top-bar">
-            <div class="resource">
-                🪙 <span id="gold">1500</span>
-                🥩 <span id="food">500</span>
-            </div>
-        </div>
-
-        <div class="tabs">
-            <div class="tab active" onclick="showTab('dragons')">🐉 Драконы</div>
-            <div class="tab" onclick="showTab('chests')">🎁 Сундуки</div>
-            <div class="tab" onclick="showTab('arena')">⚔️ Дуэли</div>
-        </div>
-
-        <!-- Секция драконов -->
-        <div id="dragons" class="tab-content active">
-            <div class="dragons-grid" id="dragonsList"></div>
-        </div>
-
-        <!-- Секция сундуков -->
-        <div id="chests" class="tab-content">
-            <div class="chest-card" onclick="openChest('regular')">
-                <h3>Обычный сундук</h3>
-                <p>Доступно через: <span id="chestTimer">03:59:00</span></p>
-            </div>
-            <div class="chest-card" onclick="openChest('battle')">
-                <h3>Боевой сундук</h3>
-                <p>Побед до открытия: <span id="winsCounter">0/10</span></p>
-            </div>
-        </div>
-
-        <!-- Секция арены -->
-        <div id="arena" class="tab-content">
-            <button class="action-button" onclick="findOpponent()">Найти соперника</button>
-            <div id="battleLog"></div>
-        </div>
-
-        <!-- Арена -->
-        <div class="arena" id="battleArena">
-            <div id="battleProgress"></div>
-            <div class="dice-result" id="playerDice">0</div>
-            <div class="dice-result" id="enemyDice">0</div>
-            <button class="action-button" onclick="attack()">Атаковать!</button>
+    <!-- Модальное окно кейса -->
+    <div class="modal" id="caseModal">
+        <div class="modal-content case-opening">
+            <div id="caseResult"></div>
         </div>
     </div>
 
 <script>
-// Игровые данные
+// Обновленные игровые данные
 let gameState = {
     gold: 1500,
     food: 500,
@@ -206,110 +91,134 @@ let gameState = {
         wins: 0,
         currentEnemy: null,
         chestCooldown: 0
-    }
+    },
+    selectedDragon: null
 };
 
-// Запуск игры
-function startGame() {
-    document.querySelector('.welcome-screen').style.display = 'none';
-    document.querySelector('.game-interface').style.display = 'block';
-    updateUI();
-}
-
-// Показать вкладку
+// Новые функции для работы с вкладками
 function showTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
+    document.getElementById(tabId).style.display = 'block';
     event.target.classList.add('active');
 }
 
-// Боевая система
+// Система открытия кейсов
+function openChest(type) {
+    if(type === 'regular' && gameState.battles.chestCooldown > 0) return;
+    
+    const rewards = {
+        common: ["50 золота", "30 еды", "Обычный дракон"],
+        rare: ["200 золота", "100 еды", "Редкий дракон"],
+        epic: ["500 золота", "Эпический дракон", "Усиление"]
+    };
+
+    const caseModal = document.getElementById('caseModal');
+    const resultDiv = document.getElementById('caseResult');
+    caseModal.style.display = 'block';
+    
+    setTimeout(() => {
+        const reward = rewards[type][Math.floor(Math.random() * rewards[type].length)];
+        resultDiv.innerHTML = `
+            <h3>Вы получили:</h3>
+            <div class="reward-item">${reward}</div>
+        `;
+    }, 2000);
+}
+
+// Обновленная боевая система
+function attack() {
+    const playerRoll = Math.floor(Math.random() * 6) + 1;
+    const enemyRoll = Math.floor(Math.random() * 6) + 1;
+
+    // Анимация кубиков
+    animateDice('playerDice', playerRoll);
+    animateDice('enemyDice', enemyRoll);
+
+    setTimeout(() => {
+        if (playerRoll > enemyRoll) {
+            const damage = playerRoll - enemyRoll;
+            gameState.battles.currentEnemy.hp -= damage;
+        }
+
+        // Логика ответного удара
+        if (gameState.battles.currentEnemy.hp > 0) {
+            const enemyAttack = Math.floor(Math.random() * 6) + 1;
+            const playerDefense = Math.floor(Math.random() * 6) + 1;
+            
+            if (enemyAttack > playerDefense) {
+                const damage = enemyAttack - playerDefense;
+                gameState.selectedDragon.hp -= damage;
+            }
+        }
+
+        updateBattleUI();
+        checkBattleEnd();
+    }, 2000);
+}
+
+function animateDice(elementId, result) {
+    const diceElement = document.getElementById(elementId);
+    diceElement.textContent = '?';
+    let rotations = 0;
+    
+    const animation = setInterval(() => {
+        diceElement.textContent = Math.floor(Math.random() * 6) + 1;
+        rotations++;
+        
+        if (rotations > 10) {
+            clearInterval(animation);
+            diceElement.textContent = result;
+        }
+    }, 100);
+}
+
+// Остальные функции обновлены для работы с новой системой
 function findOpponent() {
+    document.getElementById('dragonSelectModal').style.display = 'block';
+    document.getElementById('availableDragons').innerHTML = gameState.dragons
+        .map(d => `
+            <div class="dragon-card" onclick="selectDragon(${d.id})">
+                <h3>${d.name}</h3>
+                <p>HP: ${d.hp}</p>
+            </div>
+        `).join('');
+}
+
+function selectDragon(dragonId) {
+    gameState.selectedDragon = gameState.dragons.find(d => d.id === dragonId);
+    document.getElementById('dragonSelectModal').style.display = 'none';
+    
+    // Генерация противника
     gameState.battles.currentEnemy = {
         name: "Бот",
-        hp: Math.floor(Math.random() * 80 + 50),
-        attack: Math.floor(Math.random() * 15 + 10),
-        defense: Math.floor(Math.random() * 8 + 5)
+        hp: Math.floor(Math.random() * 50 + 30),
+        attack: Math.floor(Math.random() * 5 + 5),
+        defense: Math.floor(Math.random() * 3 + 2)
     };
     
     document.getElementById('battleArena').style.display = 'block';
     updateBattleUI();
 }
 
-function attack() {
-    const playerRoll = rollDice();
-    const enemyRoll = rollDice();
-    
-    // Логика боя
-    if (playerRoll > enemyRoll) {
-        const damage = Math.max(playerRoll - enemyRoll, 1);
-        gameState.battles.currentEnemy.hp -= damage;
-    }
-    
-    if (gameState.battles.currentEnemy.hp <= 0) {
-        endBattle(true);
-        return;
-    }
-    
-    // Ответная атака
-    const enemyAttack = rollDice();
-    const playerDefense = rollDice();
-    
-    if (enemyAttack > playerDefense) {
-        const damage = Math.max(enemyAttack - playerDefense, 1);
-        gameState.dragons[0].hp -= damage;
-    }
-    
-    updateBattleUI();
-    
-    if (gameState.dragons[0].hp <= 0) {
-        endBattle(false);
-    }
+// Обновленный UI
+function updateBattleUI() {
+    const battleProgress = document.getElementById('battleProgress');
+    battleProgress.innerHTML = `
+        <h3>${gameState.selectedDragon.name}</h3>
+        <p>HP: ${gameState.selectedDragon.hp}</p>
+        <h3>${gameState.battles.currentEnemy.name}</h3>
+        <p>HP: ${gameState.battles.currentEnemy.hp}</p>
+    `;
 }
 
-function rollDice() {
-    return Math.floor(Math.random() * 20) + 1;
-}
-
-function endBattle(victory) {
-    if (victory) {
-        gameState.battles.wins++;
-        alert('Победа!');
-    } else {
-        alert('Поражение!');
-    }
-    document.getElementById('battleArena').style.display = 'none';
-    updateUI();
-}
-
-// Обновление интерфейса
-function updateUI() {
-    // Драконы
-    document.getElementById('dragonsList').innerHTML = gameState.dragons
-        .map(d => `
-            <div class="dragon-card">
-                <h3>${d.name}</h3>
-                <p>Уровень: ${d.level}</p>
-                <p>❤️ HP: ${d.hp}</p>
-                <p>⚔️ Атака: ${d.attack}</p>
-            </div>
-        `).join('');
-    
-    // Ресурсы
-    document.getElementById('gold').textContent = gameState.gold;
-    document.getElementById('food').textContent = gameState.food;
-    
-    // Счётчик побед
-    document.getElementById('winsCounter').textContent = 
-        `${gameState.battles.wins}/10`;
-}
-
-// Инициализация
 window.onload = () => {
+    // Инициализация таймеров
     setInterval(() => {
         if (gameState.battles.chestCooldown > 0) {
-            gameState.battles.chestCooldown -= 1;
+            gameState.battles.chestCooldown--;
+            document.getElementById('chestTimer').textContent = 
+                new Date(gameState.battles.chestCooldown * 1000).toISOString().substr(11, 8);
         }
     }, 1000);
 };

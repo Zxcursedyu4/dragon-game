@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Логово Дракона</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            padding: 20px;
+            background: #f0f8ff;
+        }
+        .dragon {
+            font-size: 100px;
+            margin: 30px;
+            transition: transform 0.3s;
+        }
+        button {
+            background: #ff5722;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="dragon" id="dragon">🐉</div>
+    <h1>Мой Дракон</h1>
+    <button id="feedBtn">Покормить</button>
+    
+    <script>
+        Telegram.WebApp.expand();
+        document.getElementById('feedBtn').addEventListener('click', function() {
+            const dragon = document.getElementById('dragon');
+            dragon.style.transform = 'scale(1.2)';
+            setTimeout(() => { dragon.style.transform = 'scale(1)'; }, 300);
+            Telegram.WebApp.showAlert('Ням-ням! Дракон сыт!');
+        });
+    </script>
+</body>
+</html>

@@ -2,223 +2,265 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dragon Kingdom</title>
     <style>
-        /* Базовые стили */
         :root {
-            --primary-color: #ff6b6b;
-            --secondary-color: #4ecdc4;
-            --dark-bg: #2d3436;
-            --text-light: #fff;
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --dark: #2D3436;
+            --light: #F9F9F9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
             font-family: 'Arial', sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-light);
-            padding: 20px;
+            background: var(--dark);
+            color: var(--light);
+            padding: 15px;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 100%;
             margin: 0 auto;
         }
 
-        /* Стили драконов */
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .dragon-list {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
         .dragon-card {
             background: rgba(255,255,255,0.1);
-            border-radius: 15px;
+            border-radius: 12px;
             padding: 15px;
-            margin: 10px 0;
             display: flex;
             align-items: center;
-            transition: transform 0.3s;
+            position: relative;
         }
 
-        .dragon-card:hover {
-            transform: scale(1.02);
+        .dragon-emoji {
+            font-size: 40px;
+            margin-right: 15px;
         }
 
-        .dragon-image {
-            font-size: 50px;
-            margin-right: 20px;
+        .dragon-info {
+            flex-grow: 1;
         }
 
-        /* Кнопки действий */
-        .action-button {
-            background: var(--primary-color);
+        .action-buttons {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .btn {
+            background: var(--primary);
             border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
+            padding: 15px;
+            border-radius: 8px;
             color: white;
-            margin: 5px;
+            font-size: 16px;
             cursor: pointer;
             transition: opacity 0.3s;
         }
 
-        .action-button:disabled {
+        .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        /* Адаптивность */
-        @media (max-width: 600px) {
-            .dragon-card {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .dragon-image {
-                margin: 0 0 10px 0;
-            }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--dark);
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .timer {
+            font-size: 14px;
+            color: var(--secondary);
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🐉 Dragon Kingdom</h1>
-        
-        <!-- Блок драконов -->
-        <div id="dragonsList"></div>
-
-        <!-- Действия -->
-        <div class="actions">
-            <button class="action-button" onclick="startMission()">Отправить в миссию (2h)</button>
-            <button class="action-button" onclick="startTraining()">Тренировать (2h)</button>
-            <button class="action-button" onclick="openShop()">Магазин кейсов</button>
-            <button class="action-button" onclick="spinRoulette()">Крутить рулетку (4h)</button>
+        <div class="header">
+            <h1>🐉 Dragon Kingdom</h1>
+            <p>Баланс: <span id="balance">1000</span>💰</p>
         </div>
 
-        <!-- Попап магазина -->
-        <div id="shopPopup" class="popup">
-            <div class="popup-content">
-                <h3>🎁 Магазин кейсов</h3>
-                <div class="cases">
-                    <div class="case-item" onclick="buyCase('common')">
-                        <div class="case-icon">📦</div>
-                        <p>Обычный кейс</p>
-                        <p>100 монет</p>
+        <div id="dragonsList" class="dragon-list"></div>
+
+        <div class="action-buttons">
+            <button class="btn" onclick="startMission()">Миссия (2ч)</button>
+            <button class="btn" onclick="startTraining()">Тренировка (2ч)</button>
+            <button class="btn" onclick="showShop()">Магазин</button>
+            <button class="btn" onclick="spinRoulette()">Рулетка (4ч)</button>
+        </div>
+
+        <!-- Магазин -->
+        <div id="shopModal" class="modal">
+            <div class="modal-content">
+                <h2>🎁 Магазин кейсов</h2>
+                <div class="shop-items">
+                    <div class="shop-item" onclick="buyCase('common')">
+                        <h3>Обычный кейс</h3>
+                        <p>100💰</p>
                     </div>
-                    <!-- Добавьте другие кейсы -->
+                    <div class="shop-item" onclick="buyCase('rare')">
+                        <h3>Редкий кейс</h3>
+                        <p>300💰</p>
+                    </div>
+                    <div class="shop-item" onclick="buyCase('epic')">
+                        <h3>Эпический кейс</h3>
+                        <p>500💰</p>
+                    </div>
                 </div>
+                <button class="btn" onclick="hideShop()">Закрыть</button>
             </div>
         </div>
     </div>
 
-    <script>
-        // Базовая конфигурация
-        const RARITIES = {
-            COMMON: { color: '#7f8c8d', multiplier: 1 },
-            RARE: { color: '#3498db', multiplier: 2 },
-            EPIC: { color: '#9b59b6', multiplier: 3 },
-            LEGENDARY: { color: '#f1c40f', multiplier: 5 },
-            ANCIENT: { color: '#e74c3c', multiplier: 10 }
+<script>
+// Состояние игры
+let gameState = {
+    balance: 1000,
+    dragons: [],
+    lastMission: 0,
+    lastTraining: 0,
+    lastSpin: 0
+};
+
+// Класс Дракона
+class Dragon {
+    constructor(rarity) {
+        this.id = Date.now();
+        this.name = this.generateName();
+        this.rarity = rarity;
+        this.level = 1;
+        this.exp = 0;
+        this.stats = {
+            strength: 10,
+            agility: 10,
+            stamina: 100
         };
+        this.isBusy = false;
+    }
 
-        // Состояние игры
-        let gameState = {
-            dragons: [],
-            balance: 1000,
-            lastMission: 0,
-            lastTraining: 0,
-            lastSpin: 0
-        };
+    generateName() {
+        const names = ['Игнис', 'Вулкан', 'Смараг', 'Альдор', 'Зирикс'];
+        return names[Math.floor(Math.random() * names.length)];
+    }
+}
 
-        // Класс Дракона
-        class Dragon {
-            constructor(rarity, name) {
-                this.name = name;
-                this.rarity = rarity;
-                this.level = 1;
-                this.exp = 0;
-                this.stats = {
-                    strength: 10 * RARITIES[rarity].multiplier,
-                    agility: 10 * RARITIES[rarity].multiplier,
-                    stamina: 100 * RARITIES[rarity].multiplier
-                };
-                this.isBusy = false;
-            }
-        }
+// Инициализация игры
+function initGame() {
+    loadGame();
+    if (gameState.dragons.length === 0) {
+        gameState.dragons.push(new Dragon('common'));
+    }
+    updateUI();
+}
 
-        // Генерация нового дракона
-        function generateDragon(rarity) {
-            const names = ['Игнис', 'Зельда', 'Альдорин', 'Смараг', 'Вулкан'];
-            return new Dragon(
-                rarity, 
-                names[Math.floor(Math.random() * names.length)]
-            );
-        }
+// Обновление интерфейса
+function updateUI() {
+    const list = document.getElementById('dragonsList');
+    list.innerHTML = '';
+    
+    gameState.dragons.forEach(dragon => {
+        const card = document.createElement('div');
+        card.className = 'dragon-card';
+        card.innerHTML = `
+            <div class="dragon-emoji">${getDragonEmoji(dragon.rarity)}</div>
+            <div class="dragon-info">
+                <h3>${dragon.name}</h3>
+                <p>Уровень: ${dragon.level}</p>
+                <p>Сила: ${dragon.stats.strength} 💪</p>
+                <p>Ловкость: ${dragon.stats.agility} 🏃</p>
+                ${dragon.isBusy ? '<div class="timer">Занят ещё: 1:59:00</div>' : ''}
+            </div>
+        `;
+        list.appendChild(card);
+    });
+    
+    document.getElementById('balance').textContent = gameState.balance;
+}
 
-        // Обновление интерфейса
-        function updateUI() {
-            const container = document.getElementById('dragonsList');
-            container.innerHTML = '';
-            
-            gameState.dragons.forEach(dragon => {
-                const card = document.createElement('div');
-                card.className = 'dragon-card';
-                card.innerHTML = `
-                    <div class="dragon-image">${getDragonArt(dragon.rarity)}</div>
-                    <div>
-                        <h3>${dragon.name} (${RARITIES[dragon.rarity].name})</h3>
-                        <p>Уровень: ${dragon.level}</p>
-                        <p>Сила: ${dragon.stats.strength} 💪</p>
-                        <p>Ловкость: ${dragon.stats.agility} 🏃</p>
-                        <p>Выносливость: ${dragon.stats.stamina} ❤️</p>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
+// Получение эмодзи дракона
+function getDragonEmoji(rarity) {
+    const emojis = {
+        common: '🐉',
+        rare: '🐲',
+        epic: '🔥',
+        legendary: '✨',
+        ancient: '⚡'
+    };
+    return emojis[rarity] || '🐉';
+}
 
-        // Получение арта дракона
-        function getDragonArt(rarity) {
-            const arts = {
-                COMMON: '🐉',
-                RARE: '🐲',
-                EPIC: '🔥🐲🔥',
-                LEGENDARY: '✨🐉✨',
-                ANCIENT: '⚡🐲⚡'
-            };
-            return arts[rarity] || '🐲';
-        }
+// Система миссий
+function startMission() {
+    if (Date.now() - gameState.lastMission < 7200000) {
+        alert('Миссия доступна раз в 2 часа!');
+        return;
+    }
+    
+    gameState.lastMission = Date.now();
+    gameState.balance += 500;
+    updateUI();
+    saveGame();
+}
 
-        // Запуск миссии
-        function startMission() {
-            if (Date.now() - gameState.lastMission < 7200000) {
-                alert('Миссии можно отправлять раз в 2 часа!');
-                return;
-            }
-            
-            // Логика миссии
-            gameState.lastMission = Date.now();
-            gameState.balance += 500;
-            updateUI();
-        }
+// Магазин
+function showShop() {
+    document.getElementById('shopModal').style.display = 'block';
+}
 
-        // Инициализация
-        function initGame() {
-            // Загрузка сохранений
-            const saved = localStorage.getItem('dragonGame');
-            if (saved) gameState = JSON.parse(saved);
-            
-            // Генерация стартового дракона
-            if (gameState.dragons.length === 0) {
-                gameState.dragons.push(generateDragon('COMMON'));
-            }
-            
-            updateUI();
-        }
+function hideShop() {
+    document.getElementById('shopModal').style.display = 'none';
+}
 
-        // Сохранение игры
-        function saveGame() {
-            localStorage.setItem('dragonGame', JSON.stringify(gameState));
-        }
+// Сохранение игры
+function saveGame() {
+    localStorage.setItem('dragonGame', JSON.stringify(gameState));
+}
 
-        // Запуск игры
-        initGame();
-        setInterval(saveGame, 30000); // Автосохранение каждые 30 сек
-    </script>
+// Загрузка игры
+function loadGame() {
+    const saved = localStorage.getItem('dragonGame');
+    if (saved) gameState = JSON.parse(saved);
+}
+
+// Запуск игры
+window.onload = initGame;
+setInterval(saveGame, 30000);
+</script>
 </body>
 </html>

@@ -5,326 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Оптимизированные стили */
-        :root {
-            --bg-color: #0f0f15;
-            --card-color: #1a1a25;
-            --text-color: #e0e0e0;
-            --accent-color: #bb86fc;
-            --secondary-color: #03dac6;
-            --button-bg: #3700b3;
-            --button-hover: #6200ee;
-            --error-color: #ff4444;
-            --success-color: #00C851;
+        /* Стили остаются прежними, но добавим класс для ботов */
+        .bot-dragon {
+            border: 2px solid #ff4444;
+            background-color: rgba(255, 0, 0, 0.1);
         }
-        
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            overflow-x: hidden;
-            touch-action: manipulation;
-            line-height: 1.5;
-        }
-        
-        /* Оптимизированные контейнеры */
-        .container {
-            max-width: 100%;
-            padding: 10px;
-            padding-bottom: 60px;
-            will-change: transform;
-        }
-        
-        .tab-container {
-            display: flex;
-            margin-bottom: 10px;
-            overflow-x: auto;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-            padding-bottom: 5px;
-            scrollbar-width: none;
-        }
-        
-        .tab-container::-webkit-scrollbar {
-            display: none;
-        }
-        
-        /* Оптимизированные карточки */
-        .dragon-pen {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
-            margin-top: 12px;
-            contain: strict;
-        }
-        
-        .dragon-card {
-            background: var(--card-color);
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease;
-            position: relative;
-            overflow: hidden;
-            will-change: transform;
-        }
-        
-        /* Оптимизированные анимации */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .notification {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--accent-color);
-            color: #000;
-            padding: 8px 16px;
-            border-radius: 5px;
-            z-index: 100;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            max-width: 90%;
-            text-align: center;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-        
-        /* Оптимизированное нижнее меню */
-        .bottom-menu {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1a1a25;
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-            box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
-            z-index: 50;
-            backdrop-filter: blur(5px);
-        }
-        
-        /* Адаптация для мобильных */
-        @media (max-width: 400px) {
-            .dragon-pen {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            }
-            
-            .dragon-emoji {
-                font-size: 32px !important;
-            }
+        .sell-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #777 !important;
         }
     </style>
 </head>
 <body>
-    <div class="notification" id="notification"></div>
-    
     <div class="container">
-        <!-- Оптимизированный интерфейс -->
-    </div>
-
-    <div class="bottom-menu">
-        <button class="menu-btn active">🐉</button>
-        <button class="menu-btn">⚔️</button>
-        <button class="menu-btn">🎰</button>
-        <button class="menu-btn">🎁</button>
-        <button class="menu-btn">🛒</button>
+        <!-- Остальной интерфейс остается без изменений -->
+        <div id="battle" class="tab-content">
+            <h2>Арена</h2>
+            <button id="fightBotBtn" class="action-btn">Сразиться с ботом</button>
+            <div id="battleArena" style="display: none;">
+                <!-- Боевая арена будет здесь -->
+            </div>
+        </div>
     </div>
 
     <script>
-        // Оптимизированный объект игры
-        const Game = {
-            state: {
-                coins: 100,
-                food: 20,
-                battlePoints: 0,
-                dragons: [],
-                lastSpin: null,
-                lastCases: {},
-                battle: null,
-                passiveIncomeInterval: null
-            },
-            
-            consts: {
-                dragonTypes: [
-                    { emoji: "🐲", name: "Обычный", rank: "C", stats: [80, 10, 5, 8] },
-                    { emoji: "🐉", name: "Редкий", rank: "B", stats: [100, 15, 8, 10] },
-                    { emoji: "🔥", name: "Огненный", rank: "A", stats: [120, 20, 10, 12] },
-                    { emoji: "🦎", name: "Невидимка", rank: "S", stats: [100, 25, 15, 20] },
-                    { emoji: "🐊", name: "Король", rank: "SS", stats: [150, 30, 20, 15] },
-                    { emoji: "✨", name: "Легендарный", rank: "SSS", stats: [200, 40, 25, 18] }
-                ],
-                caseCooldowns: { common: 4, epic: 12 }
-            },
-            
+        const game = {
+            // ... предыдущие свойства ...
+
+            botNames: ["Огнедышащий", "Ледяной", "Громовой", "Теневой", "Каменный"],
+            botTitles: ["Новичок", "Ученик", "Воин", "Мастер", "Легенда"],
+
             init() {
-                this.load();
-                this.setupPassiveIncome();
-                Telegram.WebApp.ready();
-                this.render();
+                // ... предыдущая инициализация ...
+                document.getElementById('fightBotBtn').addEventListener('click', this.startBotBattle.bind(this));
             },
-            
-            load() {
-                const saved = localStorage.getItem('dragonGame');
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        this.state = { ...this.state, ...parsed };
-                        
-                        // Миграция старых данных
-                        if (this.state.dragons.length && !this.state.dragons[0].skills) {
-                            this.state.dragons = this.state.dragons.map(d => ({
-                                ...d,
-                                skills: this.getDragonType(d.type).skills || ['Укус'],
-                                special: this.getDragonType(d.type).special || { name: "Атака", power: 10 }
-                            }));
-                        }
-                    } catch (e) {
-                        console.error("Ошибка загрузки:", e);
-                    }
-                }
+
+            createBotDragon() {
+                const rank = this.getRandomRank();
+                const type = this.dragonTypes.find(d => d.rank === rank);
+                const name = this.botNames[Math.floor(Math.random() * this.botNames.length)];
+                const title = this.botTitles[Math.floor(Math.random() * this.botTitles.length)];
                 
-                // Стартовые драконы
-                if (this.state.dragons.length === 0) {
-                    this.state.dragons = [
-                        this.createDragon("C"),
-                        this.createDragon("C")
-                    ];
-                }
-            },
-            
-            save() {
-                try {
-                    localStorage.setItem('dragonGame', JSON.stringify({
-                        coins: this.state.coins,
-                        food: this.state.food,
-                        dragons: this.state.dragons,
-                        lastSpin: this.state.lastSpin,
-                        lastCases: this.state.lastCases
-                    }));
-                } catch (e) {
-                    console.error("Ошибка сохранения:", e);
-                }
-            },
-            
-            createDragon(type) {
-                const template = this.getDragonType(type);
                 return {
-                    id: Date.now().toString(36),
-                    type,
-                    emoji: template.emoji,
-                    name: template.name,
-                    level: 1,
-                    xp: 0,
-                    stats: [...template.stats],
-                    skills: template.skills || ['Укус'],
-                    special: template.special || { name: "Атака", power: 10 },
-                    fedToday: 0,
-                    battlesWon: 0
+                    id: "bot-" + Date.now(),
+                    type: rank,
+                    emoji: type.emoji,
+                    name: `${name} ${title}`,
+                    isBot: true,
+                    level: Math.max(1, Math.floor(Math.random() * 5) + 1),
+                    hp: type.hp,
+                    maxHp: type.hp,
+                    attack: type.attack,
+                    defense: type.defense,
+                    speed: type.speed,
+                    skills: [...type.skills],
+                    special: {...type.special}
                 };
             },
-            
-            getDragonType(rank) {
-                return this.consts.dragonTypes.find(t => t.rank === rank) || this.consts.dragonTypes[0];
+
+            getRandomRank() {
+                const rand = Math.random();
+                if (rand < 0.5) return "C";
+                if (rand < 0.8) return "B";
+                if (rand < 0.95) return "A";
+                return "S";
             },
-            
-            setupPassiveIncome() {
-                if (this.state.passiveIncomeInterval) {
-                    clearInterval(this.state.passiveIncomeInterval);
+
+            startBotBattle() {
+                if (this.dragons.length === 0) {
+                    this.showNotification("Нет драконов для боя!");
+                    return;
                 }
+
+                const bot = this.createBotDragon();
+                this.currentBattle = {
+                    player: this.dragons[0], // Будем сражаться первым драконом
+                    bot: bot,
+                    turn: 0
+                };
+
+                this.showBattleArena();
+                this.addBattleLog(`Бой с ${bot.name} начинается!`);
+            },
+
+            showBattleArena() {
+                // Показываем арену и обновляем информацию
+                document.getElementById('battleArena').style.display = 'block';
+                this.updateBattleUI();
+            },
+
+            updateBattleUI() {
+                if (!this.currentBattle) return;
                 
-                this.state.passiveIncomeInterval = setInterval(() => {
-                    this.state.dragons.forEach(d => {
-                        this.state.coins += this.getIncomeForDragon(d.type);
-                        if (Math.random() < 0.1) this.state.food += 1;
-                    });
-                    this.save();
-                    this.updateUI();
-                }, 60000);
+                const { player, bot } = this.currentBattle;
+                // Обновляем UI боя (здесь должен быть ваш код отображения боя)
             },
-            
-            getIncomeForDragon(type) {
-                const incomeMap = { C: 1, B: 2, A: 4, S: 8, SS: 15, SSS: 30 };
-                return incomeMap[type] || 0;
+
+            sellDragon(dragonId) {
+                if (this.dragons.length <= 1) {
+                    this.showNotification("Нельзя продать последнего дракона!");
+                    return false;
+                }
+
+                const dragonIndex = this.dragons.findIndex(d => d.id === dragonId);
+                if (dragonIndex === -1) return false;
+
+                const dragon = this.dragons[dragonIndex];
+                const sellPrice = Math.floor(this.getDragonPrice(dragon.type) * 0.7);
+
+                this.coins += sellPrice;
+                this.dragons.splice(dragonIndex, 1);
+                this.showNotification(`Продан ${dragon.name} за ${sellPrice} монет`);
+                this.updateUI();
+                return true;
             },
-            
-            render() {
-                // Оптимизированный рендеринг
-                requestAnimationFrame(() => {
-                    this.updateUI();
-                    this.setupEventListeners();
-                });
-            },
-            
+
             updateUI() {
-                // Оптимизированное обновление UI
-            },
-            
-            setupEventListeners() {
-                // Делегирование событий
-                document.addEventListener('click', (e) => {
-                    const btn = e.target.closest('[data-action]');
-                    if (!btn) return;
-                    
-                    const action = btn.dataset.action;
-                    if (this[action]) {
-                        this[action](btn.dataset);
+                // Обновляем кнопки продажи
+                this.dragons.forEach(dragon => {
+                    const sellBtn = document.querySelector(`.sell-btn[data-id="${dragon.id}"]`);
+                    if (sellBtn) {
+                        sellBtn.disabled = this.dragons.length <= 1;
                     }
                 });
+                // ... остальное обновление UI
             },
-            
-            // Оптимизированные методы игры
-            feedDragon({id}) {
-                const dragon = this.state.dragons.find(d => d.id === id);
-                if (!dragon || this.state.food <= 0 || dragon.fedToday >= 3) return;
-                
-                this.state.food--;
-                dragon.fedToday++;
-                
-                const xpGain = this.getXpForFeed(dragon.type);
-                dragon.xp += xpGain;
-                
-                this.checkLevelUp(dragon);
-                this.showNotification(`${dragon.name} +${xpGain} XP`);
-                this.save();
-                this.updateUI();
-            },
-            
-            // Остальные методы...
-            
-            showNotification(msg) {
-                const el = document.getElementById('notification');
-                if (!el) return;
-                
-                el.textContent = msg;
-                el.style.opacity = '1';
-                
-                clearTimeout(this.notificationTimeout);
-                this.notificationTimeout = setTimeout(() => {
-                    el.style.opacity = '0';
-                }, 3000);
-            }
+
+            // ... остальные методы ...
         };
 
-        // Инициализация при загрузке
-        document.addEventListener('DOMContentLoaded', () => Game.init());
+        // Инициализация игры
+        document.addEventListener('DOMContentLoaded', () => game.init());
     </script>
 </body>
 </html>

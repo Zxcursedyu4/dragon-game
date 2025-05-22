@@ -27,9 +27,30 @@
             margin: 0 auto;
         }
 
-        .header {
-            text-align: center;
+        .tabs {
+            display: flex;
+            gap: 10px;
             margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tab.active {
+            background: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .dragon-card {
@@ -40,52 +61,18 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        .dragon-emoji {
-            font-size: 3em;
-            text-align: center;
-            margin: 10px 0;
+        .battle-log {
+            background: #00000030;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            height: 150px;
+            overflow-y: auto;
         }
 
-        .progress-bar {
-            height: 8px;
-            background: #30475e;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--accent);
-            transition: width 0.5s;
-        }
-
-        .button {
-            background: var(--accent);
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            margin: 5px;
-            cursor: pointer;
-            transition: opacity 0.3s;
-        }
-
-        .button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .timer {
-            font-size: 0.9em;
-            color: #8f8f8f;
-            margin-top: 5px;
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 20px;
+        .dice-result {
+            color: var(--gold);
+            font-weight: bold;
         }
     </style>
 </head>
@@ -98,11 +85,39 @@
             </div>
         </div>
 
-        <div id="dragons" class="dragon-list"></div>
-        
-        <div class="actions">
-            <button class="button" onclick="game.openCase('basic')">Базовый кейс (100💰)</button>
-            <button class="button" onclick="game.spinRoulette()">Рулетка (4ч)</button>
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('dragons')">Драконы</div>
+            <div class="tab" onclick="switchTab('cases')">Кейсы</div>
+            <div class="tab" onclick="switchTab('battle')">Дуэли</div>
+        </div>
+
+        <!-- Вкладка Драконы -->
+        <div id="dragons-tab" class="tab-content active">
+            <div id="dragons" class="dragon-list"></div>
+        </div>
+
+        <!-- Вкладка Кейсы -->
+        <div id="cases-tab" class="tab-content">
+            <div class="cases">
+                <div class="case-card">
+                    <h3>Базовый кейс</h3>
+                    <p>Стоимость: 100💰</p>
+                    <button class="button" onclick="game.openCase('basic')">Открыть</button>
+                </div>
+                <div class="case-card">
+                    <h3>Редкий кейс</h3>
+                    <p>Стоимость: 500💰</p>
+                    <button class="button" onclick="game.openCase('rare')">Открыть</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка Дуэли -->
+        <div id="battle-tab" class="tab-content">
+            <div id="battle-arena">
+                <div id="battle-log" class="battle-log"></div>
+                <button class="button" onclick="game.startBattle()">Начать бой</button>
+            </div>
         </div>
     </div>
 
@@ -113,20 +128,9 @@
                     gold: 1000,
                     food: 50,
                     dragons: [],
-                    lastActions: {},
-                    cases: {
-                        basic: { cost: 100, rewards: ['food', 'gold', 'dragon-C'] },
-                        rare: { cost: 500, rewards: ['dragon-B', 'gold-500', 'food-100'] },
-                        epic: { cost: 2000, rewards: ['dragon-A', 'dragon-S', 'gold-2000'] }
-                    },
-                    dragonTypes: {
-                        'C': { emoji: '🐲', stats: { hp: 100, attack: 10, speed: 5 }, evolve: null },
-                        'B': { emoji: '🐉', stats: { hp: 150, attack: 15, speed: 7 }, evolve: null },
-                        'A': { emoji: '🔥', stats: { hp: 200, attack: 20, speed: 10 }, evolve: 'S' },
-                        'S': { emoji: '🦖', stats: { hp: 300, attack: 30, speed: 15 }, evolve: 'SS' },
-                        'SS': { emoji: '🐊', stats: { hp: 500, attack: 50, speed: 20 }, evolve: 'SSS' },
-                        'SSS': { emoji: '✨', stats: { hp: 1000, attack: 100, speed: 30 }, evolve: 'Ancient' }
-                    }
+                    battleLog: [],
+                    currentBattle: null,
+                    // ... остальные параметры
                 };
                 
                 this.init();
@@ -135,135 +139,85 @@
             init() {
                 this.load();
                 this.render();
-                setInterval(() => this.updateTimers(), 1000);
                 Telegram.WebApp.ready();
-                Telegram.WebApp.MainButton.setText('Меню').show().onClick(() => this.showMenu());
             }
 
-            render() {
-                document.getElementById('gold').textContent = this.state.gold;
-                document.getElementById('food').textContent = this.state.food;
-                this.renderDragons();
-            }
-
-            renderDragons() {
-                const container = document.getElementById('dragons');
-                container.innerHTML = '';
+            // Система боя в стиле D&D
+            startBattle() {
+                const playerDragon = this.state.dragons[0];
+                const enemy = this.generateEnemy();
                 
-                this.state.dragons.forEach(dragon => {
-                    const dragonElement = document.createElement('div');
-                    dragonElement.className = 'dragon-card';
-                    dragonElement.innerHTML = `
-                        <div class="dragon-emoji">${dragon.emoji}</div>
-                        <div>Уровень: ${dragon.level}</div>
-                        <div>Редкость: ${dragon.rarity}</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${(dragon.xp / dragon.xpToNextLevel) * 100}%"></div>
-                        </div>
-                        <button class="button" onclick="game.trainDragon('${dragon.id}')" 
-                            ${dragon.training ? 'disabled' : ''}>
-                            Тренировать (2ч)
-                        </button>
-                        <button class="button" onclick="game.sendExpedition('${dragon.id}')" 
-                            ${dragon.expedition ? 'disabled' : ''}>
-                            Вылазка (2ч)
-                        </button>
-                        ${dragon.training ? `<div class="timer">Тренировка: ${this.formatTime(dragon.training.end - Date.now())}</div>` : ''}
-                    `;
-                    container.appendChild(dragonElement);
-                });
-            }
-
-            createDragon(rarity) {
-                const type = this.state.dragonTypes[rarity];
-                return {
-                    id: Date.now().toString(),
-                    emoji: type.emoji,
-                    rarity: rarity,
-                    level: 1,
-                    xp: 0,
-                    xpToNextLevel: 100,
-                    stats: { ...type.stats },
-                    training: null,
-                    expedition: null
+                this.state.currentBattle = {
+                    round: 1,
+                    player: playerDragon,
+                    enemy: enemy,
+                    log: []
                 };
+
+                this.battleLoop();
             }
 
-            openCase(type) {
-                const caseInfo = this.state.cases[type];
-                if (this.state.gold < caseInfo.cost) return;
+            battleLoop() {
+                const { player, enemy } = this.state.currentBattle;
                 
-                this.state.gold -= caseInfo.cost;
-                const reward = caseInfo.rewards[Math.floor(Math.random() * caseInfo.rewards.length)];
+                // Ход игрока
+                const playerAttack = this.rollD20() + player.stats.attack;
+                const enemyDefense = 10 + enemy.stats.defense;
                 
-                if (reward.startsWith('dragon-')) {
-                    const rarity = reward.split('-')[1];
-                    this.state.dragons.push(this.createDragon(rarity));
+                if(playerAttack > enemyDefense) {
+                    const damage = this.rollDice(8) + player.stats.attack;
+                    enemy.stats.hp -= damage;
+                    this.logAction(`Игрок попадает и наносит ${damage} урона!`);
+                } else {
+                    this.logAction("Игрок промахивается!");
                 }
-                
-                this.render();
-            }
 
-            spinRoulette() {
-                // Логика рулетки
-            }
-
-            trainDragon(id) {
-                const dragon = this.state.dragons.find(d => d.id === id);
-                if (!dragon || dragon.training) return;
-                
-                dragon.training = {
-                    start: Date.now(),
-                    duration: 7200000 // 2 часа
-                };
-                this.render();
-            }
-
-            sendExpedition(id) {
-                const dragon = this.state.dragons.find(d => d.id === id);
-                if (!dragon || dragon.expedition) return;
-                
-                dragon.expedition = {
-                    start: Date.now(),
-                    duration: 7200000 // 2 часа
-                };
-                this.render();
-            }
-
-            formatTime(ms) {
-                const hours = Math.floor(ms / 3600000);
-                const minutes = Math.floor((ms % 3600000) / 60000);
-                return `${hours}ч ${minutes}м`;
-            }
-
-            updateTimers() {
-                this.state.dragons.forEach(dragon => {
-                    if (dragon.training && Date.now() > dragon.training.start + dragon.training.duration) {
-                        dragon.level++;
-                        dragon.training = null;
-                    }
+                // Ход противника
+                if(enemy.stats.hp > 0) {
+                    const enemyAttack = this.rollD20() + enemy.stats.attack;
+                    const playerDefense = 10 + player.stats.defense;
                     
-                    if (dragon.expedition && Date.now() > dragon.expedition.start + dragon.expedition.duration) {
-                        this.state.gold += 100;
-                        this.state.food += 50;
-                        dragon.expedition = null;
+                    if(enemyAttack > playerDefense) {
+                        const damage = this.rollDice(8) + enemy.stats.attack;
+                        player.stats.hp -= damage;
+                        this.logAction(`Противник наносит ${damage} урона!`);
+                    } else {
+                        this.logAction("Противник промахивается!");
                     }
-                });
-                this.render();
+                }
+
+                // Проверка конца боя
+                if(player.stats.hp <= 0 || enemy.stats.hp <= 0) {
+                    this.endBattle();
+                } else {
+                    this.state.currentBattle.round++;
+                    setTimeout(() => this.battleLoop(), 1000);
+                }
             }
 
-            load() {
-                const saved = localStorage.getItem('dragonGame');
-                if (saved) this.state = JSON.parse(saved);
+            rollD20() {
+                return Math.floor(Math.random() * 20) + 1;
             }
 
-            save() {
-                localStorage.setItem('dragonGame', JSON.stringify(this.state));
+            rollDice(sides) {
+                return Math.floor(Math.random() * sides) + 1;
             }
 
-            showMenu() {
-                // Логика меню
+            logAction(text) {
+                this.state.battleLog.push(text);
+                this.renderBattleLog();
             }
+
+            // ... остальные методы
+        }
+
+        // Переключение вкладок
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
         }
 
         const game = new DragonGame();

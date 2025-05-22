@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Драконий Магазин</title>
+    <title>Драконий Магазин PRO</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            font-family: Arial;
+            font-family: 'Arial', sans-serif;
             text-align: center;
             padding: 20px;
-            background: #f0f8ff;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
         }
         .dragon-pen {
             display: flex;
@@ -19,58 +20,135 @@
         }
         .dragon {
             font-size: 60px;
-            background: #fff;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            width: 120px;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 140px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .dragon:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.15);
         }
         .shop {
-            background: #fff;
-            border-radius: 10px;
-            padding: 15px;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
             margin: 20px auto;
-            max-width: 300px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: slideUp 0.4s ease-out;
         }
         button {
-            background: #4CAF50;
+            background: linear-gradient(to right, #4CAF50, #2E8B57);
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            margin: 5px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin: 8px;
             cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-weight: bold;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        button:active {
+            transform: scale(0.98);
         }
         .stats {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            animation: fadeIn 0.6s ease-out;
         }
         .stat {
-            background: #e9f5e9;
-            padding: 10px;
-            border-radius: 5px;
+            background: linear-gradient(to right, #e9f5e9, #d0e8d0);
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-width: 100px;
+            transition: all 0.3s;
+        }
+        .stat:hover {
+            transform: translateY(-3px);
+        }
+        .empty-slot {
+            background: #f0f0f0;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .empty-slot:hover {
+            background: #e0e0e0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+        .coin-effect {
+            position: absolute;
+            font-size: 20px;
+            color: gold;
+            font-weight: bold;
+            animation: floatUp 1s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% { 
+                opacity: 0;
+                transform: translateY(-50px);
+            }
         }
     </style>
 </head>
 <body>
-    <h1>🐉 Драконий Зоопарк</h1>
+    <h1 style="animation: fadeIn 0.4s ease-out;">🐉 Драконий Зоопарк PRO</h1>
     
     <div class="stats">
         <div class="stat">🍗 Корм: <span id="food">10</span></div>
         <div class="stat">💰 Монеты: <span id="coins">50</span></div>
     </div>
     
-    <h2>Ваши драконы:</h2>
+    <h2 style="animation: fadeIn 0.5s ease-out;">Ваши драконы:</h2>
     <div class="dragon-pen" id="dragonPen">
         <!-- Драконы будут здесь -->
     </div>
     
     <div class="shop">
-        <h3>Магазин</h3>
-        <button onclick="buyFood()">Купить корм (5💰)</button>
+        <h3 style="margin-top: 0;">Магазин</h3>
+        <button onclick="buyFood()">Купить корм (5💰 → 3🍗)</button>
         <button onclick="buyDragonSlot()">Новое место (100💰)</button>
+        <button onclick="addRandomDragon()" style="background: linear-gradient(to right, #FF8C00, #FFA500);">Добавить дракона (50💰)</button>
     </div>
 
     <script>
@@ -79,7 +157,8 @@
             food: 10,
             coins: 50,
             dragons: ['🐲', '🐉'],
-            maxDragons: 2
+            maxDragons: 2,
+            dragonTypes: ['🐲', '🐉', '🔥', '🦎', '🐊', '🐲', '🐲', '🐲']
         };
 
         // Инициализация Telegram Mini App
@@ -110,53 +189,173 @@
             // Добавляем пустые места
             for (let i = game.dragons.length; i < game.maxDragons; i++) {
                 const emptySlot = document.createElement('div');
-                emptySlot.className = 'dragon';
-                emptySlot.textContent = '🕳️';
+                emptySlot.className = 'dragon empty-slot';
+                emptySlot.textContent = '➕';
+                emptySlot.onclick = () => {
+                    if (game.coins >= 50 && game.dragons.length < game.maxDragons) {
+                        addRandomDragon();
+                    } else if (game.dragons.length >= game.maxDragons) {
+                        Telegram.WebApp.showAlert('Купите новые места в магазине!');
+                    } else {
+                        Telegram.WebApp.showAlert('Нужно 50 монет!');
+                    }
+                };
                 pen.appendChild(emptySlot);
             }
         }
 
+        // Анимация изменения числа
+        function animateValue(element, start, end, duration = 500) {
+            const range = end - start;
+            const startTime = performance.now();
+            
+            function updateValue(time) {
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const value = start + Math.floor(progress * range);
+                element.textContent = value;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateValue);
+                }
+            }
+            
+            requestAnimationFrame(updateValue);
+        }
+
+        // Создать эффект монет
+        function createCoinEffect(amount, element) {
+            const rect = element.getBoundingClientRect();
+            const coin = document.createElement('div');
+            coin.className = 'coin-effect';
+            coin.textContent = `+${amount}`;
+            coin.style.left = `${rect.left + rect.width/2 - 10}px`;
+            coin.style.top = `${rect.top - 10}px`;
+            document.body.appendChild(coin);
+            
+            setTimeout(() => {
+                coin.remove();
+            }, 1000);
+        }
+
         // Функции игры
         function feedDragon(index) {
-            if (game.food > 0) {
-                game.food--;
-                game.coins += 5; // Заработок за кормление
-                Telegram.WebApp.showAlert('Дракон сыт! +5 монет');
-                updateUI();
-            } else {
+            if (game.food <= 0) {
                 Telegram.WebApp.showAlert('Нет корма!');
+                return;
             }
+            
+            const foodElement = document.getElementById('food');
+            const coinsElement = document.getElementById('coins');
+            
+            // Тратим корм
+            game.food--;
+            animateValue(foodElement, game.food + 1, game.food);
+            
+            // Получаем монеты
+            const earnedCoins = 5;
+            game.coins += earnedCoins;
+            animateValue(coinsElement, game.coins - earnedCoins, game.coins);
+            
+            // Анимация
+            const dragonElements = document.querySelectorAll('.dragon');
+            dragonElements[index].classList.add('pulse');
+            setTimeout(() => {
+                dragonElements[index].classList.remove('pulse');
+            }, 500);
+            
+            createCoinEffect(earnedCoins, dragonElements[index]);
         }
 
         function buyFood() {
-            if (game.coins >= 5) {
-                game.coins -= 5;
-                game.food += 3;
-                Telegram.WebApp.showAlert('Куплено 3 корма!');
-                updateUI();
-            } else {
+            if (game.coins < 5) {
                 Telegram.WebApp.showAlert('Недостаточно монет!');
+                return;
             }
+            
+            const coinsElement = document.getElementById('coins');
+            const foodElement = document.getElementById('food');
+            
+            // Тратим монеты
+            game.coins -= 5;
+            animateValue(coinsElement, game.coins + 5, game.coins);
+            
+            // Получаем корм
+            const foodAdded = 3;
+            game.food += foodAdded;
+            animateValue(foodElement, game.food - foodAdded, game.food);
+            
+            // Анимация
+            document.querySelector('.shop').classList.add('pulse');
+            setTimeout(() => {
+                document.querySelector('.shop').classList.remove('pulse');
+            }, 500);
         }
 
         function buyDragonSlot() {
-            if (game.coins >= 100) {
-                game.coins -= 100;
-                game.maxDragons++;
-                Telegram.WebApp.showAlert(`Теперь у вас ${game.maxDragons} мест для драконов!`);
-                updateUI();
-            } else {
+            if (game.coins < 100) {
                 Telegram.WebApp.showAlert('Нужно 100 монет!');
+                return;
             }
+            
+            const coinsElement = document.getElementById('coins');
+            
+            // Тратим монеты
+            game.coins -= 100;
+            animateValue(coinsElement, game.coins + 100, game.coins);
+            
+            // Увеличиваем слоты
+            game.maxDragons++;
+            
+            // Анимация
+            document.querySelectorAll('.empty-slot').forEach(slot => {
+                slot.classList.add('pulse');
+            });
+            
+            Telegram.WebApp.showAlert(`Теперь у вас ${game.maxDragons} мест для драконов!`);
+            updateUI();
         }
 
-        // Добавление нового дракона (можно вызвать позже)
-        function addDragon() {
-            if (game.dragons.length < game.maxDragons) {
-                const types = ['🐲', '🐉', '🔥', '🦎', '🐊'];
-                game.dragons.push(types[Math.floor(Math.random() * types.length)]);
-                updateUI();
+        function addRandomDragon() {
+            if (game.coins < 50) {
+                Telegram.WebApp.showAlert('Нужно 50 монет!');
+                return;
             }
+            
+            if (game.dragons.length >= game.maxDragons) {
+                Telegram.WebApp.showAlert('Купите новые места в магазине!');
+                return;
+            }
+            
+            const coinsElement = document.getElementById('coins');
+            
+            // Тратим монеты
+            game.coins -= 50;
+            animateValue(coinsElement, game.coins + 50, game.coins);
+            
+            // Добавляем дракона
+            const randomType = game.dragonTypes[Math.floor(Math.random() * game.dragonTypes.length)];
+            game.dragons.push(randomType);
+            
+            // Анимация
+            const newDragon = document.createElement('div');
+            newDragon.className = 'dragon';
+            newDragon.style.opacity = '0';
+            newDragon.innerHTML = `
+                ${randomType}
+                <div>
+                    <button onclick="feedDragon(${game.dragons.length - 1})">Кормить (1🍗)</button>
+                </div>
+            `;
+            document.getElementById('dragonPen').appendChild(newDragon);
+            
+            setTimeout(() => {
+                newDragon.style.transition = 'opacity 0.5s';
+                newDragon.style.opacity = '1';
+            }, 10);
+            
+            Telegram.WebApp.showAlert(`Новый дракон ${randomType} появился!`);
+            updateUI();
         }
 
         // Первая загрузка

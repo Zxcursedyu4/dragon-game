@@ -74,6 +74,31 @@
             color: var(--gold);
             font-weight: bold;
         }
+
+        .button {
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .combatant {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: #ffffff10;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -81,7 +106,7 @@
         <div class="header">
             <h1>🐉 Dragon Empire</h1>
             <div class="resources">
-                💰 <span id="gold">0</span> | 🍗 <span id="food">0</span>
+                💰 <span id="gold">1000</span> | 🍗 <span id="food">50</span>
             </div>
         </div>
 
@@ -99,12 +124,12 @@
         <!-- Вкладка Кейсы -->
         <div id="cases-tab" class="tab-content">
             <div class="cases">
-                <div class="case-card">
+                <div class="dragon-card">
                     <h3>Базовый кейс</h3>
                     <p>Стоимость: 100💰</p>
                     <button class="button" onclick="game.openCase('basic')">Открыть</button>
                 </div>
-                <div class="case-card">
+                <div class="dragon-card">
                     <h3>Редкий кейс</h3>
                     <p>Стоимость: 500💰</p>
                     <button class="button" onclick="game.openCase('rare')">Открыть</button>
@@ -115,8 +140,16 @@
         <!-- Вкладка Дуэли -->
         <div id="battle-tab" class="tab-content">
             <div id="battle-arena">
+                <div class="combatant" id="player-combatant">
+                    <div>Ваш дракон: <span id="player-name"></span></div>
+                    <div>HP: <span id="player-hp"></span></div>
+                </div>
+                <div class="combatant" id="enemy-combatant">
+                    <div>Противник: <span id="enemy-name"></span></div>
+                    <div>HP: <span id="enemy-hp"></span></div>
+                </div>
                 <div id="battle-log" class="battle-log"></div>
-                <button class="button" onclick="game.startBattle()">Начать бой</button>
+                <button class="button" id="start-battle" onclick="game.startBattle()">Начать бой</button>
             </div>
         </div>
     </div>
@@ -127,72 +160,120 @@
                 this.state = {
                     gold: 1000,
                     food: 50,
-                    dragons: [],
-                    battleLog: [],
-                    currentBattle: null,
-                    // ... остальные параметры
+                    dragons: [
+                        {
+                            id: 1,
+                            name: "Огненный дракон",
+                            type: "A",
+                            stats: {
+                                hp: 200,
+                                maxHp: 200,
+                                attack: 5,
+                                defense: 3,
+                                level: 1
+                            },
+                            emoji: "🔥"
+                        }
+                    ],
+                    currentBattle: null
+                };
+            }
+
+            openCase(type) {
+                const cases = {
+                    basic: { cost: 100, dragons: ["C", "B"] },
+                    rare: { cost: 500, dragons: ["A", "S"] }
                 };
                 
-                this.init();
+                if (this.state.gold < cases[type].cost) return;
+                
+                this.state.gold -= cases[type].cost;
+                const dragonType = cases[type].dragons[Math.floor(Math.random() * cases[type].dragons.length)];
+                this.addDragon(dragonType);
+                this.updateUI();
             }
 
-            init() {
-                this.load();
-                this.render();
-                Telegram.WebApp.ready();
+            addDragon(type) {
+                const dragons = {
+                    C: { name: "Обычный дракон", stats: { hp: 100, maxHp: 100, attack: 2, defense: 1 }, emoji: "🐲" },
+                    B: { name: "Редкий дракон", stats: { hp: 150, maxHp: 150, attack: 3, defense: 2 }, emoji: "🐉" },
+                    A: { name: "Эпический дракон", stats: { hp: 200, maxHp: 200, attack: 5, defense: 3 }, emoji: "🔥" },
+                    S: { name: "Легендарный дракон", stats: { hp: 300, maxHp: 300, attack: 7, defense: 5 }, emoji: "✨" }
+                };
+
+                this.state.dragons.push({
+                    id: Date.now(),
+                    ...dragons[type],
+                    stats: { ...dragons[type].stats },
+                    level: 1
+                });
             }
 
-            // Система боя в стиле D&D
             startBattle() {
-                const playerDragon = this.state.dragons[0];
-                const enemy = this.generateEnemy();
+                if (this.state.dragons.length === 0) return;
                 
                 this.state.currentBattle = {
-                    round: 1,
-                    player: playerDragon,
-                    enemy: enemy,
+                    player: {...this.state.dragons[0].stats},
+                    enemy: this.generateEnemy(),
                     log: []
                 };
 
+                document.getElementById('start-battle').disabled = true;
+                this.updateBattleUI();
                 this.battleLoop();
             }
 
+            generateEnemy() {
+                const enemies = [
+                    { name: "Гоблин", hp: 30, attack: 4, defense: 2 },
+                    { name: "Орк", hp: 50, attack: 6, defense: 3 },
+                    { name: "Драконид", hp: 80, attack: 8, defense: 5 }
+                ];
+                
+                return {...enemies[Math.floor(Math.random() * enemies.length)]};
+            }
+
             battleLoop() {
+                if (!this.state.currentBattle) return;
+
                 const { player, enemy } = this.state.currentBattle;
                 
                 // Ход игрока
-                const playerAttack = this.rollD20() + player.stats.attack;
-                const enemyDefense = 10 + enemy.stats.defense;
-                
-                if(playerAttack > enemyDefense) {
-                    const damage = this.rollDice(8) + player.stats.attack;
-                    enemy.stats.hp -= damage;
-                    this.logAction(`Игрок попадает и наносит ${damage} урона!`);
+                const playerAttackRoll = this.rollD20() + player.attack;
+                if (playerAttackRoll > enemy.defense + 10) {
+                    const damage = this.rollDice(8) + player.attack;
+                    enemy.hp = Math.max(0, enemy.hp - damage);
+                    this.logBattle(`Вы атакуете и наносите ${damage} урона!`);
                 } else {
-                    this.logAction("Игрок промахивается!");
+                    this.logBattle("Вы промахнулись!");
                 }
 
                 // Ход противника
-                if(enemy.stats.hp > 0) {
-                    const enemyAttack = this.rollD20() + enemy.stats.attack;
-                    const playerDefense = 10 + player.stats.defense;
-                    
-                    if(enemyAttack > playerDefense) {
-                        const damage = this.rollDice(8) + enemy.stats.attack;
-                        player.stats.hp -= damage;
-                        this.logAction(`Противник наносит ${damage} урона!`);
+                if (enemy.hp > 0) {
+                    const enemyAttackRoll = this.rollD20() + enemy.attack;
+                    if (enemyAttackRoll > player.defense + 10) {
+                        const damage = this.rollDice(8) + enemy.attack;
+                        player.hp = Math.max(0, player.hp - damage);
+                        this.logBattle(`${enemy.name} атакует и наносит ${damage} урона!`);
                     } else {
-                        this.logAction("Противник промахивается!");
+                        this.logBattle(`${enemy.name} промахнулся!`);
                     }
                 }
 
-                // Проверка конца боя
-                if(player.stats.hp <= 0 || enemy.stats.hp <= 0) {
+                this.updateBattleUI();
+
+                if (player.hp <= 0 || enemy.hp <= 0) {
                     this.endBattle();
                 } else {
-                    this.state.currentBattle.round++;
-                    setTimeout(() => this.battleLoop(), 1000);
+                    setTimeout(() => this.battleLoop(), 1500);
                 }
+            }
+
+            endBattle() {
+                const result = this.state.currentBattle.player.hp > 0 ? "Победа!" : "Поражение!";
+                this.logBattle(`${result} Бой завершен!`);
+                document.getElementById('start-battle').disabled = false;
+                this.state.currentBattle = null;
             }
 
             rollD20() {
@@ -203,15 +284,30 @@
                 return Math.floor(Math.random() * sides) + 1;
             }
 
-            logAction(text) {
-                this.state.battleLog.push(text);
-                this.renderBattleLog();
+            logBattle(message) {
+                const log = document.getElementById('battle-log');
+                log.innerHTML += `<div class="dice-result">${message}</div>`;
+                log.scrollTop = log.scrollHeight;
             }
 
-            // ... остальные методы
+            updateUI() {
+                document.getElementById('gold').textContent = this.state.gold;
+                document.getElementById('food').textContent = this.state.food;
+            }
+
+            updateBattleUI() {
+                if (!this.state.currentBattle) return;
+
+                const { player, enemy } = this.state.currentBattle;
+                document.getElementById('player-name').textContent = this.state.dragons[0].name;
+                document.getElementById('player-hp').textContent = `${player.hp}/${this.state.dragons[0].stats.maxHp}`;
+                document.getElementById('enemy-name').textContent = enemy.name;
+                document.getElementById('enemy-hp').textContent = `${enemy.hp}/${enemy.hp + enemy.hp}`;
+            }
         }
 
-        // Переключение вкладок
+        const game = new DragonGame();
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -220,7 +316,9 @@
             document.getElementById(`${tabName}-tab`).classList.add('active');
         }
 
-        const game = new DragonGame();
+        // Инициализация Telegram Mini App
+        Telegram.WebApp.ready();
+        Telegram.WebApp.MainButton.setText('Меню').show();
     </script>
 </body>
 </html>

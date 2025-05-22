@@ -2,274 +2,145 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D&D Legacy</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Dark Mysteries D&D</title>
     <style>
-        :root {
-            --main-bg: linear-gradient(45deg, #1a1a2e 0%, #2a2a4a 100%);
-            --accent: #bb86fc;
-            --text: #e0e0e0;
-            --warning: #ff4444;
-            --card-bg: rgba(0, 0, 0, 0.5);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         body {
-            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(45deg, #0a0a0a, #1a001a);
+            color: #e0e0ff;
+            font-family: 'Courier New', monospace;
             margin: 0;
             min-height: 100vh;
-            color: var(--text);
-            background: var(--main-bg);
+            overflow: hidden;
         }
 
         .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            animation: fadeIn 1s;
         }
 
-        .tab-content {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .tab-content.active {
-            display: block;
-            opacity: 1;
-        }
-
-        .character-creator {
-            background: var(--card-bg);
-            border-radius: 15px;
-            padding: 2rem;
-            animation: fadeIn 0.8s ease-out;
-        }
-
-        .typewriter {
-            border-right: 3px solid var(--accent);
-            white-space: nowrap;
-            overflow: hidden;
-            font-family: monospace;
-            font-size: 1.2em;
-            height: 60px;
-            margin: 20px 0;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            background: var(--card-bg);
-            padding: 1rem;
+        .player-card {
+            background: linear-gradient(145deg, #2a002a, #000);
+            border: 2px solid #8a2be2;
             border-radius: 10px;
-        }
-
-        .warning-box {
-            border: 2px solid var(--warning);
-            animation: pulseWarning 1s infinite;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-        }
-
-        @keyframes pulseWarning {
-            50% { border-color: transparent; }
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 0 15px #8a2be2;
         }
 
         button {
-            background: var(--accent);
-            border: none;
+            background: #4a004a;
             color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
+            border: 1px solid #8a2be2;
+            padding: 10px 20px;
             cursor: pointer;
-            transition: transform 0.2s;
-            margin: 10px 0;
+            transition: all 0.3s;
         }
 
         button:hover {
+            background: #6a006a;
             transform: scale(1.05);
+        }
+
+        .warning {
+            border: 3px solid #ff0000 !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        .typing-effect {
+            overflow: hidden;
+            white-space: nowrap;
+            animation: typewriter 2s steps(40);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Создание персонажа -->
-        <div id="character-creation" class="tab-content active">
-            <div class="character-creator">
-                <h2>Создание персонажа</h2>
-                <div class="typewriter" id="backstory"></div>
-                <div id="creation-form">
-                    <div>
-                        <label>Имя персонажа:</label>
-                        <input type="text" id="char-name" required>
-                    </div>
-                    <button onclick="game.createCharacter()">Начать легенду</button>
-                </div>
+    <div class="container" id="mainScreen">
+        <!-- Экран создания персонажа -->
+        <div id="characterCreation">
+            <h1 class="typing-effect">Добро пожаловать в Dark Mysteries!</h1>
+            <div class="player-card">
+                <input type="text" id="playerName" placeholder="Введите имя">
+                <button onclick="createCharacter()">Создать</button>
             </div>
         </div>
 
         <!-- Игровой интерфейс -->
-        <div id="game-interface" class="tab-content">
-            <div class="stats-grid">
-                <div>
-                    <h3>Характеристики</h3>
-                    <div id="stats-list"></div>
+        <div id="gameInterface" style="display: none;">
+            <div class="player-card">
+                <h2 id="charName"></h2>
+                <div id="stats">
+                    <p>Сила: <span id="str">10</span></p>
+                    <p>Ловкость: <span id="dex">8</span></p>
                 </div>
-                <div>
-                    <h3>Инвентарь</h3>
-                    <div id="inventory"></div>
-                </div>
-                <div>
-                    <h3>Действия</h3>
-                    <button onclick="game.startAdventure()">Отправиться в путь</button>
-                </div>
+                <button onclick="showInventory()">Инвентарь</button>
             </div>
-        </div>
-
-        <!-- Экран смерти -->
-        <div id="death-screen" class="tab-content">
-            <div class="character-creator">
-                <h2>Ваше путешествие окончено</h2>
-                <div id="death-message"></div>
-                <button onclick="game.newGame()">Начать заново</button>
-            </div>
-        </div>
-
-        <!-- Предупреждение о читерстве -->
-        <div id="cheat-warning" class="warning-box" style="display: none;">
-            ⚠️ Вы не можете читерить в этой игре! ⚠️
         </div>
     </div>
 
     <script>
-        class DnDGame {
-            constructor() {
-                this.players = [];
-                this.currentPlayer = null;
-                this.cheatAttempts = 0;
-                
-                this.init();
+        let currentPlayer = {};
+        
+        function createCharacter() {
+            const name = document.getElementById('playerName').value;
+            if (!name) {
+                alert('Введите имя!');
+                return;
             }
+            
+            currentPlayer = {
+                name: name,
+                stats: { str: 10, dex: 8 },
+                inventory: []
+            };
 
-            init() {
-                this.showTab('character-creation');
-                this.animateText("Добро пожаловать в мир древних легенд...", document.getElementById('backstory'));
-            }
-
-            async createCharacter() {
-                const name = document.getElementById('char-name').value;
-                if (!name) return this.showWarning("Введите имя персонажа!");
-                
-                this.currentPlayer = {
-                    name,
-                    level: 1,
-                    hp: 100,
-                    maxHp: 100,
-                    inventory: [],
-                    stats: this.generateStats()
-                };
-
-                await this.generateBackstory();
-                this.showTab('game-interface');
-                this.updateStats();
-                this.startCheatDetection();
-            }
-
-            generateStats() {
-                return {
-                    strength: this.rollDice(6, 3),
-                    dexterity: this.rollDice(6, 3),
-                    constitution: this.rollDice(6, 3),
-                    intelligence: this.rollDice(6, 3),
-                    wisdom: this.rollDice(6, 3),
-                    charisma: this.rollDice(6, 3)
-                };
-            }
-
-            async generateBackstory() {
-                try {
-                    const response = await fetch('https://api.deepseek.com/v1/story', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer sk-bba273c9380a4f7486b80117979fd59d'
-                        },
-                        body: JSON.stringify({
-                            character: this.currentPlayer
-                        })
-                    });
-                    
-                    const story = await response.json();
-                    this.animateText(story.content, document.getElementById('backstory'));
-                } catch (error) {
-                    this.animateText("Ваша история начинается в туманных землях...", document.getElementById('backstory'));
-                }
-            }
-
-            startCheatDetection() {
-                const originalStats = JSON.stringify(this.currentPlayer.stats);
-                
-                setInterval(() => {
-                    if (JSON.stringify(this.currentPlayer.stats) !== originalStats) {
-                        this.showCheatWarning();
-                        this.currentPlayer.stats = JSON.parse(originalStats);
-                        this.updateStats();
-                    }
-                }, 1000);
-            }
-
-            showCheatWarning() {
-                const warning = document.getElementById('cheat-warning');
-                warning.style.display = 'block';
-                setTimeout(() => warning.style.display = 'none', 3000);
-            }
-
-            updateStats() {
-                const statsElement = document.getElementById('stats-list');
-                statsElement.innerHTML = Object.entries(this.currentPlayer.stats)
-                    .map(([key, value]) => `
-                        <div>${key.toUpperCase()}: ${value}</div>
-                    `).join('');
-            }
-
-            animateText(text, element) {
-                return new Promise(resolve => {
-                    element.innerHTML = '';
-                    let index = 0;
-                    
-                    const interval = setInterval(() => {
-                        element.innerHTML += text[index];
-                        if (++index === text.length) {
-                            clearInterval(interval);
-                            element.style.borderRight = 'none';
-                            resolve();
-                        }
-                    }, 50);
-                });
-            }
-
-            showTab(tabId) {
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                document.getElementById(tabId).classList.add('active');
-            }
-
-            rollDice(sides, times = 1) {
-                return Array.from({length: times}, () => 
-                    Math.floor(Math.random() * sides) + 1
-                ).reduce((a, b) => a + b);
-            }
+            document.getElementById('characterCreation').style.display = 'none';
+            document.getElementById('gameInterface').style.display = 'block';
+            document.getElementById('charName').textContent = name;
         }
 
-        const game = new DnDGame();
+        function showInventory() {
+            // Логика инвентаря с анимациями
+        }
+
+        // Античит система
+        const originalStats = {...currentPlayer.stats};
+        setInterval(() => {
+            if (JSON.stringify(currentPlayer.stats) !== JSON.stringify(originalStats)) {
+                showWarning();
+            }
+        }, 1000);
+
+        function showWarning() {
+            const elem = document.querySelector('.player-card');
+            elem.classList.add('warning');
+            setTimeout(() => elem.classList.remove('warning'), 2000);
+            alert('Вы не можете читерить в этой игре!!!');
+        }
+
+        // Интеграция с API (пример)
+        async function generateStory(prompt) {
+            const response = await fetch('https://api.deepsic.com/v1/story', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer sk-bba273c9380a4f7486b80117979fd59d',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            return await response.json();
+        }
     </script>
 </body>
 </html>

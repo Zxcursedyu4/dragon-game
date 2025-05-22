@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dragon Kingdom</title>
+    <title>Dragon Arena</title>
     <style>
         :root {
-            --bg-dark: #0A0416;
-            --accent-purple: #4A1B6E;
-            --text-purple: #A45EEB;
-            --highlight: #FF6EC7;
-            --text-light: #FFFFFF;
-            --section-bg: rgba(74, 27, 110, 0.3);
+            --bg-dark: #0a0818;
+            --accent-purple: #6a1b9a;
+            --text-purple: #b388ff;
+            --highlight: #ff6ec7;
+            --text-light: #ffffff;
         }
 
         body {
@@ -20,241 +19,298 @@
             color: var(--text-light);
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
 
-        /* Навигация */
-        .nav-tabs {
-            display: flex;
-            justify-content: space-around;
-            padding: 1rem;
-            background: var(--accent-purple);
+        /* Стартовый экран */
+        .welcome-screen {
             position: fixed;
-            bottom: 0;
-            width: 100%;
-            z-index: 1000;
-        }
-
-        .nav-item {
-            padding: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .nav-item.active {
-            border-bottom: 3px solid var(--highlight);
-        }
-
-        /* Секции */
-        .section {
-            display: none;
-            padding: 2rem;
-            padding-bottom: 6rem;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        /* Карточка дракона */
-        .dragon-card {
-            background: var(--section-bg);
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        .dragon-status {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            font-size: 0.8rem;
-            color: var(--highlight);
-        }
-
-        /* Рулетка */
-        .roulette-wheel {
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background: var(--accent-purple);
-            margin: 2rem auto;
-            position: relative;
-            overflow: hidden;
-            transform: rotate(0deg);
-            transition: transform 3s;
-        }
-
-        .roulette-segment {
-            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
-            transform-origin: 50% 50%;
+            background: radial-gradient(circle, #2a0845 0%, #0a0818 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 1000;
+            animation: fadeIn 1.5s;
         }
 
-        /* Таймеры */
-        .timer {
-            background: var(--highlight);
-            color: var(--bg-dark);
-            padding: 0.5rem 1rem;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .welcome-text {
+            font-size: 2.2rem;
+            margin: 2rem;
+            text-shadow: 0 0 15px var(--text-purple);
+        }
+
+        .start-button {
+            background: var(--accent-purple);
+            color: white;
+            padding: 1.5rem 4rem;
+            border: none;
+            border-radius: 2rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+            box-shadow: 0 0 20px var(--text-purple);
+        }
+
+        /* Основной интерфейс */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(0,0,0,0.5);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 999;
+        }
+
+        .resource {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 4rem;
+            padding: 1rem;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            border-color: var(--highlight);
+        }
+
+        /* Секция драконов */
+        .dragons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+
+        .dragon-card {
+            background: linear-gradient(45deg, #2a0845, #4a148c);
             border-radius: 1rem;
-            display: inline-block;
-            margin-top: 1rem;
+            padding: 1.5rem;
+            position: relative;
+            border: 2px solid var(--accent-purple);
+        }
+
+        /* Арена */
+        .arena {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 2rem;
+            border-radius: 2rem;
+            width: 90%;
+            max-width: 600px;
+            z-index: 1001;
+        }
+
+        .dice-result {
+            font-size: 4rem;
+            text-align: center;
+            margin: 2rem 0;
         }
     </style>
 </head>
 <body>
-    <!-- Навигация -->
-    <div class="nav-tabs">
-        <div class="nav-item active" onclick="showSection('main')">🏠 Главная</div>
-        <div class="nav-item" onclick="showSection('training')">🏋️ Тренировка</div>
-        <div class="nav-item" onclick="showSection('hunt')">⚔️ Охота</div>
-        <div class="nav-item" onclick="showSection('roulette')">🎡 Рулетка</div>
+    <!-- Стартовый экран -->
+    <div class="welcome-screen">
+        <div class="welcome-text">
+            Здравствуйте, уважаемые игроки!<br>
+            Надеемся, вам понравится эта игра<br>
+            Команда DragonEggBot
+        </div>
+        <button class="start-button" onclick="startGame()">В бой!</button>
     </div>
 
-    <!-- Главная секция -->
-    <div id="main" class="section active">
-        <div class="balance">💰 Баланс: <span id="balance">1500</span></div>
-        
-        <h2>Ваши драконы</h2>
-        <div id="dragonsList"></div>
-        
-        <button class="action-button" onclick="showDragonSelection('mission')">Отправить на вылазку</button>
-        <button class="action-button" onclick="showDragonSelection('training')">Начать тренировку</button>
-    </div>
+    <!-- Основной интерфейс -->
+    <div class="game-interface" style="display: none;">
+        <div class="top-bar">
+            <div class="resource">
+                🪙 <span id="gold">1500</span>
+                🥩 <span id="food">500</span>
+            </div>
+        </div>
 
-    <!-- Секция тренировки -->
-    <div id="training" class="section">
-        <h2>🏋️ Тренирующиеся драконы</h2>
-        <div id="trainingList"></div>
-    </div>
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('dragons')">🐉 Драконы</div>
+            <div class="tab" onclick="showTab('chests')">🎁 Сундуки</div>
+            <div class="tab" onclick="showTab('arena')">⚔️ Дуэли</div>
+        </div>
 
-    <!-- Секция охоты -->
-    <div id="hunt" class="section">
-        <h2>⚔️ Драконы на задании</h2>
-        <div id="huntList"></div>
-    </div>
+        <!-- Секция драконов -->
+        <div id="dragons" class="tab-content active">
+            <div class="dragons-grid" id="dragonsList"></div>
+        </div>
 
-    <!-- Рулетка -->
-    <div id="roulette" class="section">
-        <div class="roulette-wheel" id="rouletteWheel"></div>
-        <button class="action-button" onclick="spinRoulette()">Крутить (4ч)</button>
-    </div>
+        <!-- Секция сундуков -->
+        <div id="chests" class="tab-content">
+            <div class="chest-card" onclick="openChest('regular')">
+                <h3>Обычный сундук</h3>
+                <p>Доступно через: <span id="chestTimer">03:59:00</span></p>
+            </div>
+            <div class="chest-card" onclick="openChest('battle')">
+                <h3>Боевой сундук</h3>
+                <p>Побед до открытия: <span id="winsCounter">0/10</span></p>
+            </div>
+        </div>
 
-    <!-- Модальные окна -->
-    <div id="dragonSelectModal" class="modal">
-        <div class="modal-content">
-            <h2>Выберите дракона</h2>
-            <div id="availableDragons"></div>
-            <button onclick="closeModal()">Отмена</button>
+        <!-- Секция арены -->
+        <div id="arena" class="tab-content">
+            <button class="action-button" onclick="findOpponent()">Найти соперника</button>
+            <div id="battleLog"></div>
+        </div>
+
+        <!-- Арена -->
+        <div class="arena" id="battleArena">
+            <div id="battleProgress"></div>
+            <div class="dice-result" id="playerDice">0</div>
+            <div class="dice-result" id="enemyDice">0</div>
+            <button class="action-button" onclick="attack()">Атаковать!</button>
         </div>
     </div>
 
 <script>
-// Состояние игры
+// Игровые данные
 let gameState = {
-    balance: 1500,
+    gold: 1500,
+    food: 500,
     dragons: [
-        {id: 1, name: "Вулкан", level: 1, status: "free", 
-         stats: {strength: 10, agility: 10}, tasks: []}
+        {id: 1, name: "Вулкан", level: 1, hp: 100, attack: 15, defense: 10},
+        {id: 2, name: "Тень", level: 1, hp: 80, attack: 20, defense: 8}
     ],
-    lastRoulette: 0
+    battles: {
+        wins: 0,
+        currentEnemy: null,
+        chestCooldown: 0
+    }
 };
 
-// Показать секцию
-function showSection(sectionId) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(sectionId).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+// Запуск игры
+function startGame() {
+    document.querySelector('.welcome-screen').style.display = 'none';
+    document.querySelector('.game-interface').style.display = 'block';
+    updateUI();
+}
+
+// Показать вкладку
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
     event.target.classList.add('active');
 }
 
-// Выбор дракона
-function showDragonSelection(actionType) {
-    const modal = document.getElementById('dragonSelectModal');
-    modal.style.display = 'block';
+// Боевая система
+function findOpponent() {
+    gameState.battles.currentEnemy = {
+        name: "Бот",
+        hp: Math.floor(Math.random() * 80 + 50),
+        attack: Math.floor(Math.random() * 15 + 10),
+        defense: Math.floor(Math.random() * 8 + 5)
+    };
     
-    const list = document.getElementById('availableDragons');
-    list.innerHTML = gameState.dragons
-        .filter(d => d.status === 'free')
-        .map(d => `
-            <div class="dragon-card" onclick="startAction(${d.id}, '${actionType}')">
-                ${d.name} (Ур. ${d.level})
-            </div>
-        `).join('');
+    document.getElementById('battleArena').style.display = 'block';
+    updateBattleUI();
 }
 
-// Запуск действия
-function startAction(dragonId, actionType) {
-    const dragon = gameState.dragons.find(d => d.id === dragonId);
-    dragon.status = actionType;
-    dragon.tasks.push({
-        type: actionType,
-        endTime: Date.now() + (actionType === 'mission' ? 7200000 : 7200000)
-    });
+function attack() {
+    const playerRoll = rollDice();
+    const enemyRoll = rollDice();
     
+    // Логика боя
+    if (playerRoll > enemyRoll) {
+        const damage = Math.max(playerRoll - enemyRoll, 1);
+        gameState.battles.currentEnemy.hp -= damage;
+    }
+    
+    if (gameState.battles.currentEnemy.hp <= 0) {
+        endBattle(true);
+        return;
+    }
+    
+    // Ответная атака
+    const enemyAttack = rollDice();
+    const playerDefense = rollDice();
+    
+    if (enemyAttack > playerDefense) {
+        const damage = Math.max(enemyAttack - playerDefense, 1);
+        gameState.dragons[0].hp -= damage;
+    }
+    
+    updateBattleUI();
+    
+    if (gameState.dragons[0].hp <= 0) {
+        endBattle(false);
+    }
+}
+
+function rollDice() {
+    return Math.floor(Math.random() * 20) + 1;
+}
+
+function endBattle(victory) {
+    if (victory) {
+        gameState.battles.wins++;
+        alert('Победа!');
+    } else {
+        alert('Поражение!');
+    }
+    document.getElementById('battleArena').style.display = 'none';
     updateUI();
-    closeModal();
 }
 
 // Обновление интерфейса
 function updateUI() {
-    // Обновление главного списка
+    // Драконы
     document.getElementById('dragonsList').innerHTML = gameState.dragons
-        .map(d => createDragonCard(d)).join('');
-    
-    // Обновление тренировки
-    document.getElementById('trainingList').innerHTML = gameState.dragons
-        .filter(d => d.status === 'training')
-        .map(d => createDragonCard(d)).join('');
-    
-    // Обновление охоты
-    document.getElementById('huntList').innerHTML = gameState.dragons
-        .filter(d => d.status === 'mission')
-        .map(d => createDragonCard(d)).join('');
-}
-
-// Рулетка
-function initRoulette() {
-    const prizes = ['💰 100 монет', '⚡ Ускорение', '🐉 Дракон', '🎁 Кейс'];
-    const wheel = document.getElementById('rouletteWheel');
-    wheel.innerHTML = prizes
-        .map((p, i) => `
-            <div class="roulette-segment" style="transform: rotate(${i * 90}deg)">
-                ${p}
+        .map(d => `
+            <div class="dragon-card">
+                <h3>${d.name}</h3>
+                <p>Уровень: ${d.level}</p>
+                <p>❤️ HP: ${d.hp}</p>
+                <p>⚔️ Атака: ${d.attack}</p>
             </div>
         `).join('');
-}
-
-function spinRoulette() {
-    if (Date.now() - gameState.lastRoulette < 14400000) {
-        alert('Рулетка доступна раз в 4 часа!');
-        return;
-    }
     
-    const wheel = document.getElementById('rouletteWheel');
-    const degrees = Math.floor(Math.random() * 360) + 1440;
-    wheel.style.transform = `rotate(${degrees}deg)`;
+    // Ресурсы
+    document.getElementById('gold').textContent = gameState.gold;
+    document.getElementById('food').textContent = gameState.food;
     
-    // Определение приза
-    setTimeout(() => {
-        const prizeIndex = Math.floor((degrees % 360) / 90);
-        alert(`Вы выиграли: ${prizes[prizeIndex]}!`);
-        gameState.lastRoulette = Date.now();
-    }, 3000);
+    // Счётчик побед
+    document.getElementById('winsCounter').textContent = 
+        `${gameState.battles.wins}/10`;
 }
 
 // Инициализация
 window.onload = () => {
-    initRoulette();
-    updateUI();
     setInterval(() => {
-        gameState.dragons.forEach(d => {
-            d.tasks = d.tasks.filter(t => t.endTime > Date.now());
-            if (d.tasks.length === 0) d.status = 'free';
-        });
-        updateUI();
+        if (gameState.battles.chestCooldown > 0) {
+            gameState.battles.chestCooldown -= 1;
+        }
     }, 1000);
 };
 </script>

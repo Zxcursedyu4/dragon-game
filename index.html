@@ -21,6 +21,7 @@
             text-align: center;
             height: 100vh;
             box-sizing: border-box;
+            position: relative;
         }
 
         .active {
@@ -44,10 +45,16 @@
             background: rgba(0,0,0,0.5);
             padding: 10px;
             border-radius: 10px;
+            z-index: 2;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0 10px;
         }
 
         .progress-bar {
-            width: 45%;
+            width: 150px;
             height: 20px;
             background: #333;
             border-radius: 10px;
@@ -62,13 +69,14 @@
         }
 
         .battle-log {
-            height: 40vh;
+            height: 50vh;
             overflow-y: auto;
             background: rgba(0,0,0,0.7);
             padding: 10px;
             margin: 10px 0;
             border-radius: 10px;
             text-align: left;
+            flex-grow: 1;
         }
 
         button {
@@ -92,12 +100,37 @@
             display: flex;
             justify-content: space-around;
             margin: 10px 0;
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
         }
 
-        .hp-container {
-            background: rgba(0,0,0,0.5);
-            padding: 5px 10px;
-            border-radius: 5px;
+        .death-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .death-timer {
+            font-size: 24px;
+            text-align: center;
+            padding: 20px;
+            background: #4B0082;
+            border-radius: 10px;
+        }
+
+        .feed-timer {
+            font-size: 12px;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -118,11 +151,17 @@
     <!-- Основной экран -->
     <div class="screen" id="main">
         <div class="stats">
-            <div class="progress-bar" title="Здоровье">
-                <div class="progress-fill" id="hpBar"></div>
+            <div class="stat-item">
+                <div>HP: <span id="currentHP">100</span>/<span id="maxHP">100</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="hpBar"></div>
+                </div>
             </div>
-            <div class="progress-bar" title="Опыт">
-                <div class="progress-fill" id="xpBar"></div>
+            <div class="stat-item">
+                <div>XP: <span id="currentXP">0</span></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="xpBar"></div>
+                </div>
             </div>
         </div>
         <div class="dragon-icon" id="dragonIcon">🥚</div>
@@ -143,18 +182,27 @@
 
     <!-- Экран боя -->
     <div class="screen" id="fight">
-        <div class="stats">
+        <div class="combat-hp">
             <div class="hp-container">
-                Ваш HP: <span id="currentHP">100</span>
+                Ваш HP: <span id="fightPlayerHP">100</span>
             </div>
             <div class="hp-container">
-                Враг HP: <span id="enemyHP">0</span>
+                Враг HP: <span id="fightEnemyHP">0</span>
             </div>
         </div>
         <div class="battle-log" id="battleLog"></div>
         <div class="buttons">
             <button onclick="playerAttack()">Атаковать</button>
             <button onclick="nextScreen('main')">Сбежать</button>
+        </div>
+    </div>
+
+    <!-- Оверлей смерти -->
+    <div class="death-overlay" id="deathOverlay">
+        <div class="death-timer">
+            Ваш дракон повержен!<br>
+            Восстановление через:<br>
+            <span id="deathTimer">02:00:00</span>
         </div>
     </div>
 
@@ -167,7 +215,8 @@
             maxHp: 100,
             attack: 10,
             lastFeed: 0,
-            healTime: 0
+            healTime: 0,
+            inCombat: false
         };
 
         let currentEnemy = null;
@@ -186,29 +235,45 @@
             // Обновление иконки
             document.getElementById('dragonIcon').textContent = stage.icon;
             
-            // Прогресс бар XP
+            // XP
+            document.getElementById('currentXP').textContent = dragon.xp;
             const nextStage = stages[dragon.stage + 1] || {xp: Infinity};
             const xpPercent = (dragon.xp - stage.xp) / (nextStage.xp - stage.xp) * 100;
             document.getElementById('xpBar').style.width = `${xpPercent}%`;
             
-            // Прогресс бар HP
-            document.getElementById('hpBar').style.width = `${(dragon.hp / dragon.maxHp) * 100}%`;
+            // HP
             document.getElementById('currentHP').textContent = Math.floor(dragon.hp);
+            document.getElementById('maxHP').textContent = dragon.maxHp;
+            document.getElementById('hpBar').style.width = `${(dragon.hp / dragon.maxHp) * 100}%`;
             
             // Кнопка кормления
             const feedCooldown = Date.now() - dragon.lastFeed;
             const remaining = 3600000 - feedCooldown;
-            document.getElementById('feedBtn').disabled = remaining > 0;
-            document.getElementById('feedBtn').innerHTML = remaining > 0 ? 
-                `Покормить (${Math.ceil(remaining/60000)}м)` : 
-                'Покормить';
+            const isFeedDisabled = remaining > 0 || dragon.healTime > 0;
+            
+            document.getElementById('feedBtn').disabled = isFeedDisabled;
+            
+            let timerText = '';
+            if(remaining > 0) {
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                timerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            document.getElementById('feedBtn').innerHTML = `
+                Покормить
+                ${remaining > 0 ? `<div class="feed-timer">${timerText}</div>` : ''}
+            `;
         }
 
         function feed() {
+            if(Date.now() - dragon.lastFeed < 3600000) return;
+            
             dragon.lastFeed = Date.now();
             const stage = stages[dragon.stage];
             const xpGain = Math.floor((Math.random() * 10 + 1) * stage.mult);
             dragon.xp += xpGain;
+            
             addLog(`Получено ${xpGain} опыта!`);
             updateUI();
             checkEvolution();
@@ -226,6 +291,8 @@
         }
 
         function startBattle(difficulty) {
+            if(dragon.healTime > 0) return;
+            
             const baseHP = [50, 150, 300][difficulty-1];
             currentEnemy = {
                 name: ['Гоблин', 'Орк', 'Дракон'][difficulty-1],
@@ -234,13 +301,15 @@
                 attack: [10, 25, 50][difficulty-1]
             };
             
-            document.getElementById('enemyHP').textContent = currentEnemy.hp;
+            document.getElementById('fightEnemyHP').textContent = currentEnemy.hp;
+            document.getElementById('fightPlayerHP').textContent = Math.floor(dragon.hp);
+            dragon.inCombat = true;
             nextScreen('fight');
             addLog(`Бой с ${currentEnemy.name} начался!`);
         }
 
         function playerAttack() {
-            if(!currentEnemy) return;
+            if(!currentEnemy || dragon.healTime > 0) return;
             
             // Атака игрока
             const stageMult = stages[dragon.stage].mult;
@@ -254,7 +323,8 @@
             addLog(`${currentEnemy.name} наносит ${enemyDmg} урона!`);
             
             // Обновление HP
-            document.getElementById('enemyHP').textContent = Math.max(0, currentEnemy.hp);
+            document.getElementById('fightEnemyHP').textContent = Math.max(0, currentEnemy.hp);
+            document.getElementById('fightPlayerHP').textContent = Math.floor(dragon.hp);
             updateUI();
             
             // Проверка конца боя
@@ -263,16 +333,49 @@
                 dragon.xp += xpGain;
                 addLog(`Победа! +${xpGain} опыта!`);
                 currentEnemy = null;
+                dragon.inCombat = false;
                 checkEvolution();
+                nextScreen('main');
             }
             
             if(dragon.hp <= 0) {
                 dragon.healTime = Date.now() + 7200000; // 2 часа
-                addLog('Поражение! Восстановление через 2 часа.');
+                dragon.inCombat = false;
                 currentEnemy = null;
+                showDeathTimer();
+                addLog('Поражение! Восстановление через 2 часа.');
             }
             
             localStorage.setItem('dragon', JSON.stringify(dragon));
+        }
+
+        function showDeathTimer() {
+            const overlay = document.getElementById('deathOverlay');
+            overlay.style.display = 'flex';
+            
+            const updateTimer = () => {
+                const remaining = dragon.healTime - Date.now();
+                if(remaining <= 0) {
+                    overlay.style.display = 'none';
+                    dragon.hp = dragon.maxHp;
+                    dragon.healTime = 0;
+                    updateUI();
+                    return;
+                }
+                
+                const hours = Math.floor(remaining / 3600000);
+                const minutes = Math.floor((remaining % 3600000) / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                
+                document.getElementById('deathTimer').textContent = `
+                    ${hours.toString().padStart(2, '0')}:
+                    ${minutes.toString().padStart(2, '0')}:
+                    ${seconds.toString().padStart(2, '0')}
+                `;
+                requestAnimationFrame(updateTimer);
+            };
+            
+            updateTimer();
         }
 
         function addLog(message) {
@@ -283,14 +386,8 @@
 
         // Регенерация HP
         setInterval(() => {
-            if(dragon.hp < dragon.maxHp && dragon.healTime === 0) {
+            if(!dragon.inCombat && dragon.hp < dragon.maxHp && dragon.healTime === 0) {
                 dragon.hp = Math.min(dragon.hp + 1, dragon.maxHp);
-                updateUI();
-            }
-            if(dragon.healTime > 0 && Date.now() > dragon.healTime) {
-                dragon.hp = dragon.maxHp;
-                dragon.healTime = 0;
-                addLog('Дракон полностью восстановился!');
                 updateUI();
             }
         }, 300);
@@ -299,6 +396,10 @@
         window.onload = () => {
             if(localStorage.getItem('dragon')) {
                 dragon = JSON.parse(localStorage.getItem('dragon'));
+                if(dragon.healTime > 0 && Date.now() > dragon.healTime) {
+                    dragon.healTime = 0;
+                    dragon.hp = dragon.maxHp;
+                }
                 updateUI();
                 nextScreen('main');
             }

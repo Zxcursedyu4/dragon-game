@@ -2,169 +2,208 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Neuro D&D Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon Evolution Bot</title>
     <style>
         body {
-            background: #000;
-            color: #e0e0ff;
-            font-family: 'Courier New', monospace;
             margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            padding: 0;
+            background: linear-gradient(45deg, #000000, #4B0082);
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
         }
 
-        .chat-container {
-            flex: 1;
+        .screen {
+            display: none;
             padding: 20px;
-            overflow: hidden;
+            text-align: center;
         }
 
-        .chat-messages {
-            height: calc(100vh - 120px);
-            overflow-y: auto;
+        .active {
+            display: block;
+        }
+
+        .dragon-img {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            background-size: contain;
+        }
+
+        .buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
             padding: 10px;
-            border: 1px solid #2a2a2a;
-            margin-bottom: 10px;
-        }
-
-        .message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .user-message {
-            background: #1a1a1a;
-            border-left: 3px solid #8a2be2;
-        }
-
-        .ai-message {
-            background: #0a0a0a;
-            border-left: 3px solid #00ffff;
-        }
-
-        .chat-input {
-            display: flex;
+            display: grid;
             gap: 10px;
         }
 
-        input {
-            flex: 1;
-            background: #111;
-            border: 1px solid #2a2a2a;
-            color: white;
-            padding: 10px;
-        }
-
         button {
-            background: #8a2be2;
+            background: #8A2BE2;
             color: white;
             border: none;
-            padding: 10px 20px;
-            cursor: pointer;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
         }
 
-        img.generated-image {
-            max-width: 300px;
-            margin: 10px 0;
-            border: 2px solid #8a2be2;
+        button:disabled {
+            background: #444;
+            opacity: 0.7;
         }
 
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .hp-bar {
+            width: 80%;
+            height: 20px;
+            background: #444;
+            margin: 10px auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .hp-fill {
+            height: 100%;
+            background: #FF0000;
+            width: 100%;
+            transition: width 0.3s;
         }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-messages" id="chatMessages"></div>
-        <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="Ваш запрос...">
-            <button onclick="sendMessage()">Отправить</button>
+    <!-- Приветственный экран -->
+    <div class="screen active" id="welcome">
+        <h1>Добро пожаловать, игроки!</h1>
+        <p>Команда @Dragon1EggBot желает вам приятной игры!</p>
+        <button onclick="nextScreen('name')">Начать игру</button>
+    </div>
+
+    <!-- Выбор имени -->
+    <div class="screen" id="name">
+        <h2>Ваш дракончик! 🥰</h2>
+        <input type="text" placeholder="Введите имя" id="dragonName">
+        <button onclick="setName()">Сохранить</button>
+    </div>
+
+    <!-- Основной экран -->
+    <div class="screen" id="main">
+        <h2 id="dragonTitle"></h2>
+        <div class="dragon-img" id="dragonImg"></div>
+        <div class="hp-bar">
+            <div class="hp-fill" id="hpFill"></div>
+        </div>
+        <div class="buttons">
+            <button id="feedBtn" onclick="feed()">Покормить</button>
+            <button onclick="nextScreen('battle')">Сражаться</button>
         </div>
     </div>
 
+    <!-- Боевой экран -->
+    <div class="screen" id="battle">
+        <h2>Выберите сложность:</h2>
+        <button onclick="startBattle(1)">Лёгкий (1-10 XP)</button>
+        <button onclick="startBattle(2)">Средний (10-50 XP)</button>
+        <button onclick="startBattle(3)">Сложный (50-100 XP)</button>
+        <button onclick="nextScreen('main')">Назад</button>
+    </div>
+
     <script>
-        const GENAPI_TOKEN = 'sk-3QE3s6PSyljxpuNCxZN74UpypQZPd4lrEx5c24MHPR6juuxwozUajJD1Ajdf';
+        let dragon = {
+            name: '',
+            xp: 0,
+            stage: 'egg',
+            hp: 100,
+            maxHp: 100,
+            lastFeed: 0,
+            healTime: 0
+        };
 
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-            if (!message) return;
+        function nextScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
 
-            addMessage(message, 'user');
-            input.value = '';
+        function setName() {
+            dragon.name = document.getElementById('dragonName').value;
+            localStorage.setItem('dragon', JSON.stringify(dragon));
+            nextScreen('main');
+            updateDragon();
+        }
 
-            try {
-                // Генерация текста через Deepsek
-                const textResponse = await generateText(message);
-                addMessage(textResponse, 'ai');
-
-                // Генерация изображения через GenAPI
-                const imageResponse = await generateImage(message);
-                if (imageResponse) {
-                    addImage(imageResponse);
-                }
-            } catch (error) {
-                addMessage('Ошибка связи с нейросетью', 'ai');
+        function updateDragon() {
+            document.getElementById('dragonTitle').textContent = dragon.name;
+            // Логика эволюции
+            const stages = {
+                1000: 'baby',
+                10000: 'adult',
+                50000: 'elder',
+                100000: 'ancient'
+            };
+            
+            for(let xp in stages) {
+                if(dragon.xp >= xp) dragon.stage = stages[xp];
             }
+            
+            // Обновление изображения
+            document.getElementById('dragonImg').style.backgroundImage = 
+                `url(https://example.com/dragons/${dragon.stage}.png)`;
+            
+            // Обновление HP
+            document.getElementById('hpFill').style.width = 
+                `${(dragon.hp / dragon.maxHp) * 100}%`;
         }
 
-        async function generateText(prompt) {
-            const response = await fetch('https://api.deepsic.com/v1/chat', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${GENAPI_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    prompt: prompt,
-                    max_tokens: 500
-                })
-            });
-            return await response.json();
+        function feed() {
+            if(Date.now() - dragon.lastFeed < 4 * 3600000) return;
+            
+            let xpGained = Math.floor(Math.random() * 10) + 1;
+            if(dragon.stage === 'adult') xpGained *= 10;
+            if(dragon.stage === 'elder') xpGained *= 100;
+            
+            dragon.xp += xpGained;
+            dragon.lastFeed = Date.now();
+            localStorage.setItem('dragon', JSON.stringify(dragon));
+            updateDragon();
         }
 
-        async function generateImage(prompt) {
-            try {
-                const response = await fetch('https://api.genapi.com/v1/images', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${GENAPI_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: `D&D стиль: ${prompt}`,
-                        size: "512x512"
-                    })
-                });
-                return await response.json();
-            } catch (error) {
-                console.error('Ошибка генерации изображения:', error);
-                return null;
+        function startBattle(difficulty) {
+            if(dragon.hp <= 0) return alert('Дракон восстанавливается!');
+            
+            // Логика боя
+            let enemyHp = difficulty * 50;
+            while(enemyHp > 0 && dragon.hp > 0) {
+                let dmg = Math.floor(Math.random() * 20) + difficulty * 10;
+                dragon.hp -= dmg;
+                enemyHp -= Math.floor(Math.random() * 20) + 10;
             }
+            
+            if(dragon.hp <= 0) {
+                dragon.healTime = Date.now() + 43200000; // 12 часов
+                alert('Дракон повержен! Восстановление через 12 часов.');
+            } else {
+                dragon.xp += Math.floor(Math.random() * (difficulty * 50));
+            }
+            
+            updateDragon();
         }
 
-        function addMessage(text, sender) {
-            const messages = document.getElementById('chatMessages');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}-message`;
-            msgDiv.textContent = text;
-            messages.appendChild(msgDiv);
-            messages.scrollTop = messages.scrollHeight;
-        }
+        // Загрузка сохранений
+        window.onload = () => {
+            if(localStorage.getItem('dragon')) {
+                dragon = JSON.parse(localStorage.getItem('dragon'));
+                if(dragon.name) nextScreen('main');
+                updateDragon();
+            }
+        };
 
-        function addImage(imageData) {
-            const messages = document.getElementById('chatMessages');
-            const img = document.createElement('img');
-            img.className = 'generated-image';
-            img.src = imageData.url;
-            messages.appendChild(img);
-            messages.scrollTop = messages.scrollHeight;
-        }
+        // Регенерация HP
+        setInterval(() => {
+            if(dragon.hp < dragon.maxHp) dragon.hp++;
+            updateDragon();
+        }, 300);
     </script>
 </body>
 </html>
